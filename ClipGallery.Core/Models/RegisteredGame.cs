@@ -11,7 +11,7 @@ public class RegisteredGame
     /// <summary>
     /// Unique identifier for this game entry
     /// </summary>
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = "";
     
     /// <summary>
     /// Display name shown in the UI
@@ -33,4 +33,9 @@ public class RegisteredGame
     /// These are the folder names detected in the library paths.
     /// </summary>
     public List<string> FolderNames { get; set; } = new();
+    
+    public RegisteredGame()
+    {
+        Id = Guid.NewGuid().ToString();
+    }
 }

@@ -61,8 +61,8 @@ public partial class RegisteredGameViewModel : ObservableObject
         {
             try
             {
-                using var stream = File.OpenRead(IconPath);
-                IconImage = new Bitmap(stream);
+                // Load bitmap from file path directly - Avalonia handles stream management
+                IconImage = new Bitmap(IconPath);
             }
             catch { /* Ignore */ }
         }
@@ -71,8 +71,8 @@ public partial class RegisteredGameViewModel : ObservableObject
         {
             try
             {
-                using var stream = File.OpenRead(BoxArtPath);
-                BoxArtImage = new Bitmap(stream);
+                // Load bitmap from file path directly - Avalonia handles stream management
+                BoxArtImage = new Bitmap(BoxArtPath);
             }
             catch { /* Ignore */ }
         }
