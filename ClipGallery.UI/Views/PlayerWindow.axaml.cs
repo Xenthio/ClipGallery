@@ -24,9 +24,16 @@ public partial class PlayerWindow : Window
 
     private async void OnOpened(object? sender, EventArgs e)
     {
-        if (DataContext is PlayerViewModel vm)
+        try
         {
-            await vm.StartPlaybackAsync();
+            if (DataContext is PlayerViewModel vm)
+            {
+                await vm.StartPlaybackAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start playback: {ex}");
         }
     }
 
