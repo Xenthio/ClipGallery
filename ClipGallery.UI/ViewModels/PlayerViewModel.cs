@@ -145,6 +145,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     public async Task StartPlaybackAsync()
     {
+        var handlersSubscribed = false;
         await _playbackStartSemaphore.WaitAsync();
         try
         {
@@ -157,6 +158,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
             _mediaPlayer.Paused += OnMediaPlayerPaused;
             _mediaPlayer.Playing += OnMediaPlayerPlaying;
             _mediaPlayer.Stopped += OnMediaPlayerStopped;
+            handlersSubscribed = true;
 
             _mediaPlayer.Play();
             _secondaryPlayer?.Play();
@@ -165,10 +167,13 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         }
         catch
         {
-            _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
-            _mediaPlayer.Paused -= OnMediaPlayerPaused;
-            _mediaPlayer.Playing -= OnMediaPlayerPlaying;
-            _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+            if (handlersSubscribed)
+            {
+                _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+                _mediaPlayer.Paused -= OnMediaPlayerPaused;
+                _mediaPlayer.Playing -= OnMediaPlayerPlaying;
+                _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+            }
             _mediaPlayer.Stop();
             throw;
         }
@@ -376,6 +381,10 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         // Dispose VLC resources last
         _mediaPlayer.Dispose();
         _libVlc.Dispose();
+        if (_initializationTask.IsCompleted)
+        {
+            _initializationTask.Dispose();
+        }
         _playbackStartSemaphore.Dispose();
     }
 }
