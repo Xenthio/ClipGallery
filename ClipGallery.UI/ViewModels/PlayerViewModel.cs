@@ -184,6 +184,19 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Seek relative to current position by the specified seconds (can be negative)
+    /// </summary>
+    public void SeekRelative(double seconds)
+    {
+        if (_mediaPlayer.Length <= 0) return;
+        
+        var currentMs = _mediaPlayer.Time;
+        var newMs = currentMs + (long)(seconds * 1000);
+        newMs = Math.Clamp(newMs, 0, _mediaPlayer.Length);
+        _mediaPlayer.Time = newMs;
+    }
+
     // Fix UpdateDuration logic (TimeChanged)
     private void UpdateDurationDisplay()
     {

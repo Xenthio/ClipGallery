@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:ClipGallery.UI.ViewModels"
              xmlns:vlc="using:LibVLCSharp.Avalonia"
+             xmlns:controls="using:ClipGallery.UI.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="ClipGallery.UI.Views.PlayerView"
              x:DataType="vm:PlayerViewModel">
@@ -12,73 +13,136 @@
         <!-- VLC Video Player -->
         <vlc:VideoView MediaPlayer="{Binding Player}" Grid.Row="0"/>
         
-        <!-- Controls Overlay -->
-        <Border Grid.Row="1" Background="#CC000000" Padding="10">
-            <StackPanel Spacing="10">
-                <!-- Timeline -->
-                <Grid ColumnDefinitions="Auto, *, Auto" Margin="20,0">
-                    <TextBlock Text="{Binding CurrentTimeDisplay}" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Position}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="{Binding TotalTimeDisplay}" Foreground="#CCC" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                </Grid>
-
-                <!-- Play/Pause & Volume -->
-                <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
-                    <Button Command="{Binding TogglePlayPauseCommand}" Background="Transparent" Padding="10">
-                        <TextBlock Text="⏯" FontSize="24" Foreground="White"/>
-                    </Button>
-                    
-                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                        <TextBlock Text="🔊" Foreground="White" VerticalAlignment="Center" FontSize="16"/>
-                        <Slider Minimum="0" Maximum="100" Value="{Binding MainVolume}" Width="100"/>
+        <!-- Header Bar with clip info -->
+        <Border Grid.Row="0" Background="#99000000" VerticalAlignment="Top" Padding="20,15">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <!-- Back Button -->
+                <Button Grid.Column="0" 
+                        Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ClosePlayerCommand}"
+                        Background="Transparent" Padding="8,4" Margin="0,0,15,0">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="←" FontSize="18" Foreground="White" VerticalAlignment="Center"/>
+                        <TextBlock Text="Back" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
                     </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                        <TextBlock Text="🎤" Foreground="White" VerticalAlignment="Center" FontSize="16"/>
-                        <Slider Minimum="0" Maximum="1" Value="{Binding SecondaryVolume}" Width="100"/>
-                    </StackPanel>
-                </StackPanel>
+                </Button>
                 
-                <!-- Metadata Controls -->
-                <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                        <TextBlock Text="⭐" Foreground="White" VerticalAlignment="Center"/>
-                        <NumericUpDown Minimum="0" Maximum="5" Value="{Binding RatingInput}" Width="60"/>
-                    </StackPanel>
-                    
-                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                        <TextBlock Text="🏷️" Foreground="White" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding TagsInput}" Width="200" Watermark="Tags..."/>
-                    </StackPanel>
-                    
-                    <Button Content="💾" Command="{Binding SaveMetadataCommand}" ToolTip.Tip="Save Metadata"/>
-                </StackPanel>
+                <!-- Clip Title -->
+                <TextBlock Grid.Column="1" Text="{Binding CurrentClip.FileName}" 
+                           FontSize="16" FontWeight="SemiBold" Foreground="White"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 
-                <!-- Trimming Controls -->
-                <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <Button Content="[ Start" Command="{Binding SetTrimStartCommand}"/>
-                        <TextBlock Text="{Binding TrimStart, StringFormat='{}{0:F2}s'}" VerticalAlignment="Center" Foreground="#AAA"/>
-                    </StackPanel>
-                    
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <Button Content="End ]" Command="{Binding SetTrimEndCommand}"/>
-                        <TextBlock Text="{Binding TrimEnd, StringFormat='{}{0:F2}s'}" VerticalAlignment="Center" Foreground="#AAA"/>
-                    </StackPanel>
-                    
-                    <ComboBox ItemsSource="{Binding ExportPresets}" SelectedItem="{Binding SelectedPreset}" Width="100" VerticalAlignment="Center"/>
-                    <Button Content="Export" Command="{Binding ExportClipCommand}" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
-                </StackPanel>
-            </StackPanel>
+                <!-- Game Name -->
+                <TextBlock Grid.Column="2" Text="{Binding CurrentClip.GameName}" 
+                           FontSize="14" Foreground="#AAA" VerticalAlignment="Center"/>
+            </Grid>
         </Border>
         
-        <!-- Close Button (Top Right) -->
-        <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="20"
-                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ClosePlayerCommand}"
-                Background="#CC333333" Foreground="White" 
-                FontSize="18" FontWeight="Bold"
-                Padding="12,8" CornerRadius="4">
-            <TextBlock Text="✕"/>
-        </Button>
+        <!-- Controls Panel -->
+        <Border Grid.Row="1" Background="#E0181818" Padding="20,15">
+            <Grid RowDefinitions="Auto, Auto, Auto">
+                <!-- Timeline Section -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,15">
+                    <TextBlock Text="{Binding CurrentTimeDisplay}" Foreground="#CCC" VerticalAlignment="Center" 
+                               FontFamily="Consolas" FontSize="13" Width="50"/>
+                    <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Position}" VerticalAlignment="Center" Margin="15,0"/>
+                    <TextBlock Grid.Column="2" Text="{Binding TotalTimeDisplay}" Foreground="#CCC" VerticalAlignment="Center" 
+                               FontFamily="Consolas" FontSize="13" Width="50" TextAlignment="Right"/>
+                </Grid>
+
+                <!-- Main Controls Row -->
+                <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,10">
+                    <!-- Playback Controls -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                        <Button Command="{Binding TogglePlayPauseCommand}" 
+                                Background="#333" Padding="15,10" CornerRadius="4">
+                            <TextBlock Text="⏯" FontSize="20" Foreground="White"/>
+                        </Button>
+                        
+                        <!-- Main Volume -->
+                        <Border Background="#2a2a2a" CornerRadius="4" Padding="10,8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🔊" Foreground="#AAA" VerticalAlignment="Center" FontSize="14"/>
+                                <Slider Minimum="0" Maximum="100" Value="{Binding MainVolume}" Width="80" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Secondary Audio Volume (Mic track) -->
+                        <Border Background="#2a2a2a" CornerRadius="4" Padding="10,8" 
+                                IsVisible="{Binding CurrentClip.Model.HasMultiTrackAudio}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🎤" Foreground="#AAA" VerticalAlignment="Center" FontSize="14"/>
+                                <Slider Minimum="0" Maximum="1" Value="{Binding SecondaryVolume}" Width="80" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Center: Rating -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="15">
+                        <controls:RatingControl Value="{Binding RatingInput}" Height="24"/>
+                        <Button Content="Save" Command="{Binding SaveMetadataCommand}" 
+                                Background="#404040" Foreground="#CCC" Padding="15,6" CornerRadius="4"
+                                ToolTip.Tip="Save rating and tags"/>
+                    </StackPanel>
+
+                    <!-- Tags Section -->
+                    <Border Grid.Column="2" Background="#2a2a2a" CornerRadius="4" Padding="10,5">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Tags:" Foreground="#888" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding TagsInput}" Width="180" Watermark="tag1, tag2..." 
+                                     Background="#222" BorderThickness="0" Padding="8,5"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Trim and Export Section -->
+                <Border Grid.Row="2" Background="#252525" CornerRadius="6" Padding="15,12">
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <TextBlock Grid.Column="0" Text="TRIM &amp; EXPORT" FontWeight="Bold" Foreground="#666" 
+                                   VerticalAlignment="Center" FontSize="11"/>
+                        
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+                            <!-- Trim Start -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="⎾ Set Start" Command="{Binding SetTrimStartCommand}"
+                                        Background="#333" Foreground="#CCC" Padding="10,6" CornerRadius="4"/>
+                                <Border Background="#1a1a1a" CornerRadius="4" Padding="10,6">
+                                    <TextBlock Text="{Binding TrimStart, StringFormat='{}{0:F2}s'}" 
+                                               Foreground="#4CAF50" FontFamily="Consolas" FontSize="13"/>
+                                </Border>
+                            </StackPanel>
+                            
+                            <!-- Visual separator -->
+                            <TextBlock Text="→" Foreground="#555" VerticalAlignment="Center" FontSize="16"/>
+                            
+                            <!-- Trim End -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Background="#1a1a1a" CornerRadius="4" Padding="10,6">
+                                    <TextBlock Text="{Binding TrimEnd, StringFormat='{}{0:F2}s'}" 
+                                               Foreground="#FF9800" FontFamily="Consolas" FontSize="13"/>
+                                </Border>
+                                <Button Content="Set End ⏌" Command="{Binding SetTrimEndCommand}"
+                                        Background="#333" Foreground="#CCC" Padding="10,6" CornerRadius="4"/>
+                            </StackPanel>
+                        </StackPanel>
+                        
+                        <!-- Export Controls -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                            <ComboBox ItemsSource="{Binding ExportPresets}" SelectedItem="{Binding SelectedPreset}" 
+                                      Width="110" VerticalAlignment="Center" Background="#333"/>
+                            <Button Content="Export Clip" Command="{Binding ExportClipCommand}" 
+                                    Background="#007ACC" Foreground="White" FontWeight="Bold" 
+                                    Padding="15,8" CornerRadius="4"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+        
+        <!-- Keyboard shortcuts hint (optional, can be removed) -->
+        <Border Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" 
+                Background="#80000000" CornerRadius="4" Padding="10,5" Margin="10">
+            <TextBlock Text="Space: Play/Pause  |  ←/→: Seek  |  Esc: Close" 
+                       FontSize="11" Foreground="#888"/>
+        </Border>
     </Grid>
 </UserControl>
