@@ -20,6 +20,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private readonly IAudioExtractionService _audioService;
     private readonly IClipScannerService _scannerService; // Injected
     private readonly ITranscodeService _transcodeService; // Injected
+    private readonly Task _initializationTask;
 
     private IWavePlayer? _secondaryPlayer;
     private AudioFileReader? _secondaryAudioFileReader;
@@ -118,25 +119,35 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
             EnableHardwareDecoding = true
         };
         Player = _mediaPlayer; // Bindable property
-
-        InitializeAsync();
+        _initializationTask = InitializeAsync();
     }
 
-    private async void InitializeAsync()
+    private async Task InitializeAsync()
     {
         using var media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
         _mediaPlayer.Media = media;
 
         await LoadAudioTracks(); // Call the new method
+    }
 
-        _mediaPlayer.Play();
-        _secondaryPlayer?.Play();
+    private bool _playbackStarted;
+
+    public async Task StartPlaybackAsync()
+    {
+        if (_playbackStarted) return;
+
+        await _initializationTask;
 
         // Setup Sync (rough implementation)
         _mediaPlayer.TimeChanged += OnVlcTimeChanged;
         _mediaPlayer.Paused += OnMediaPlayerPaused;
         _mediaPlayer.Playing += OnMediaPlayerPlaying;
         _mediaPlayer.Stopped += OnMediaPlayerStopped;
+
+        _mediaPlayer.Play();
+        _secondaryPlayer?.Play();
+
+        _playbackStarted = true;
     }
 
     private void OnMediaPlayerPaused(object? sender, EventArgs e) => _secondaryPlayer?.Pause();
