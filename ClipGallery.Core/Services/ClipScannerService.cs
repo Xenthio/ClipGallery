@@ -72,6 +72,7 @@ public class ClipScannerService : IClipScannerService
                 {
                     clip.Rating = data.Rating;
                     clip.Tags = data.Tags;
+                    clip.Description = data.Description ?? "";
                 }
             }
             catch
@@ -130,7 +131,8 @@ public class ClipScannerService : IClipScannerService
         var data = new ClipSidecarData
         {
             Rating = clip.Rating,
-            Tags = clip.Tags
+            Tags = clip.Tags,
+            Description = clip.Description
         };
 
         var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });

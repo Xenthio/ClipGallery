@@ -26,9 +26,6 @@ public partial class MainViewModel : ObservableObject
     private GalleryViewModel _gallery;
 
     [ObservableProperty]
-    private PlayerViewModel? _currentPlayer; // When not null, player is open
-
-    [ObservableProperty]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -40,6 +37,14 @@ public partial class MainViewModel : ObservableObject
     // For context menu actions - track currently right-clicked clip
     [ObservableProperty]
     private ClipViewModel? _contextClip;
+
+    [ObservableProperty]
+    private string _searchQuery = "";
+
+    partial void OnSearchQueryChanged(string value)
+    {
+        Gallery.SetSearchQuery(value);
+    }
 
     public MainViewModel(IClipScannerService scannerService, IAudioExtractionService audioService,
         ITranscodeService transcodeService, ISettingsService settingsService, IServiceProvider serviceProvider)
@@ -151,8 +156,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void OpenPlayer(ClipViewModel vm)
     {
-        CurrentPlayer?.Dispose();
-        CurrentPlayer = new PlayerViewModel(vm, _audioService, _scannerService, _transcodeService);
+        // Open video in a separate window
+        var playerVm = new PlayerViewModel(vm, _audioService, _scannerService, _transcodeService);
+        var playerWindow = new Views.PlayerWindow
+        {
+            DataContext = playerVm
+        };
+        playerWindow.Show();
     }
 
     [RelayCommand]
@@ -182,13 +192,6 @@ public partial class MainViewModel : ObservableObject
         {
             win.ShowDialog(desktop.MainWindow);
         }
-    }
-
-    [RelayCommand]
-    public void ClosePlayer()
-    {
-        CurrentPlayer?.Dispose();
-        CurrentPlayer = null;
     }
 
     [RelayCommand]

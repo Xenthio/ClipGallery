@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ClipGallery.Core.Models;
+using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,7 @@ public partial class GalleryViewModel : ObservableObject
 
     private string? _selectedGame;
     private string? _selectedTag;
+    private string _searchQuery = "";
 
     [ObservableProperty]
     private ClipViewModel? _selectedClip;
@@ -59,6 +61,12 @@ public partial class GalleryViewModel : ObservableObject
         ApplyFilter();
     }
 
+    public void SetSearchQuery(string query)
+    {
+        _searchQuery = query;
+        ApplyFilter();
+    }
+
     private void ApplyFilter()
     {
         var filtered = _allClips.AsEnumerable();
@@ -72,6 +80,18 @@ public partial class GalleryViewModel : ObservableObject
         if (!string.IsNullOrEmpty(_selectedTag))
         {
             filtered = filtered.Where(c => c.Model.Tags.Contains(_selectedTag));
+        }
+
+        // Apply search query - search in filename, game name, tags, and description
+        if (!string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            var query = _searchQuery.Trim();
+            filtered = filtered.Where(c => 
+                c.FileName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                c.DisplayGameName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                c.Model.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                c.Model.Description.Contains(query, StringComparison.OrdinalIgnoreCase)
+            );
         }
 
         Clips = new ObservableCollection<ClipViewModel>(filtered);

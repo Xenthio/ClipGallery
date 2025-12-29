@@ -1,31 +1,16 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Markup.Xaml;
 using ClipGallery.UI.ViewModels;
 
 namespace ClipGallery.UI.Views;
 
-public partial class PlayerView : UserControl
+public partial class PlayerWindow : Window
 {
-    public PlayerView()
+    public PlayerWindow()
     {
         InitializeComponent();
-        
-        // Handle keyboard shortcuts
         KeyDown += OnKeyDown;
-        Focusable = true;
-    }
-
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
-
-    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-        Focus();
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -55,8 +40,20 @@ public partial class PlayerView : UserControl
                 e.Handled = true;
                 break;
             case Key.Escape:
-                // Close player - handled by parent
+                Close();
+                e.Handled = true;
                 break;
+        }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+        
+        // Dispose the player when window closes
+        if (DataContext is PlayerViewModel vm)
+        {
+            vm.Dispose();
         }
     }
 }

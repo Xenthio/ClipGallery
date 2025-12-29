@@ -1,41 +1,19 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:ClipGallery.UI.ViewModels"
-             xmlns:vlc="using:LibVLCSharp.Avalonia"
-             xmlns:controls="using:ClipGallery.UI.Controls"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="ClipGallery.UI.Views.PlayerView"
-             x:DataType="vm:PlayerViewModel">
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ClipGallery.UI.ViewModels"
+        xmlns:vlc="using:LibVLCSharp.Avalonia"
+        xmlns:controls="using:ClipGallery.UI.Controls"
+        x:Class="ClipGallery.UI.Views.PlayerWindow"
+        x:DataType="vm:PlayerViewModel"
+        Width="1280" Height="720"
+        MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        Background="Black"
+        Title="{Binding CurrentClip.FileName, StringFormat='ClipGallery - {0}'}">
     
-    <Grid RowDefinitions="*, Auto" Background="Black">
+    <Grid RowDefinitions="*, Auto">
         <!-- VLC Video Player -->
         <vlc:VideoView MediaPlayer="{Binding Player}" Grid.Row="0"/>
-        
-        <!-- Header Bar with clip info -->
-        <Border Grid.Row="0" Background="#99000000" VerticalAlignment="Top" Padding="20,15">
-            <Grid ColumnDefinitions="Auto, *, Auto">
-                <!-- Back Button -->
-                <Button Grid.Column="0" 
-                        Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ClosePlayerCommand}"
-                        Background="Transparent" Padding="8,4" Margin="0,0,15,0">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="←" FontSize="18" Foreground="White" VerticalAlignment="Center"/>
-                        <TextBlock Text="Back" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                
-                <!-- Clip Title -->
-                <TextBlock Grid.Column="1" Text="{Binding CurrentClip.FileName}" 
-                           FontSize="16" FontWeight="SemiBold" Foreground="White"
-                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                
-                <!-- Game Name -->
-                <TextBlock Grid.Column="2" Text="{Binding CurrentClip.GameName}" 
-                           FontSize="14" Foreground="#AAA" VerticalAlignment="Center"/>
-            </Grid>
-        </Border>
         
         <!-- Controls Panel -->
         <Border Grid.Row="1" Background="#E0181818" Padding="20,15">
@@ -138,11 +116,11 @@
             </Grid>
         </Border>
         
-        <!-- Keyboard shortcuts hint (optional, can be removed) -->
+        <!-- Keyboard shortcuts hint -->
         <Border Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" 
                 Background="#80000000" CornerRadius="4" Padding="10,5" Margin="10">
             <TextBlock Text="Space: Play/Pause  |  ←/→: Seek  |  Esc: Close" 
                        FontSize="11" Foreground="#888"/>
         </Border>
     </Grid>
-</UserControl>
+</Window>
