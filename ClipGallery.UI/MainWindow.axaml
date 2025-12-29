@@ -24,33 +24,67 @@
             <Grid RowDefinitions="*, Auto">
                 <ScrollViewer Grid.Row="0">
                     <StackPanel>
-                        <TextBlock Text="LIBRARY" FontWeight="Bold" Foreground="#808080" Margin="0,0,0,10"/>
-                        <Button Content="All Clips" Command="{Binding FilterByGameCommand}" CommandParameter="{x:Null}" Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                        <!-- Library Section Header -->
+                        <Button Command="{Binding ToggleLibraryExpandedCommand}" 
+                                Background="Transparent" 
+                                HorizontalAlignment="Stretch" 
+                                HorizontalContentAlignment="Left"
+                                Padding="0" Margin="0,0,0,5">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="▶" FontSize="10" Foreground="#808080" VerticalAlignment="Center">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform Angle="{Binding IsLibraryExpanded, Converter={x:Static converters:BoolToAngleConverter.Instance}}"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="LIBRARY" FontWeight="Bold" Foreground="#808080" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         
-                        <ItemsControl ItemsSource="{Binding Gallery.Games}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                     <Button Content="{Binding .}" 
-                                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).FilterByGameCommand}" 
-                                             CommandParameter="{Binding .}"
-                                             Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <StackPanel IsVisible="{Binding IsLibraryExpanded}">
+                            <Button Content="All Clips" Command="{Binding FilterByGameCommand}" CommandParameter="{x:Null}" Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                            
+                            <ItemsControl ItemsSource="{Binding Gallery.Games}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                         <Button Content="{Binding .}" 
+                                                 Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).FilterByGameCommand}" 
+                                                 CommandParameter="{Binding .}"
+                                                 Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
 
-                        <TextBlock Text="TAGS" FontWeight="Bold" Foreground="#808080" Margin="0,20,0,10"/>
-                        <Button Content="Any Tag" Command="{Binding FilterByTagCommand}" CommandParameter="{x:Null}" Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                        <!-- Tags Section Header -->
+                        <Button Command="{Binding ToggleTagsExpandedCommand}" 
+                                Background="Transparent" 
+                                HorizontalAlignment="Stretch" 
+                                HorizontalContentAlignment="Left"
+                                Padding="0" Margin="0,15,0,5">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="▶" FontSize="10" Foreground="#808080" VerticalAlignment="Center">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform Angle="{Binding IsTagsExpanded, Converter={x:Static converters:BoolToAngleConverter.Instance}}"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="TAGS" FontWeight="Bold" Foreground="#808080" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         
-                        <ItemsControl ItemsSource="{Binding Gallery.Tags}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                     <Button Content="{Binding .}" 
-                                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).FilterByTagCommand}" 
-                                             CommandParameter="{Binding .}"
-                                             Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <StackPanel IsVisible="{Binding IsTagsExpanded}">
+                            <Button Content="Any Tag" Command="{Binding FilterByTagCommand}" CommandParameter="{x:Null}" Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                            
+                            <ItemsControl ItemsSource="{Binding Gallery.Tags}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                         <Button Content="{Binding .}" 
+                                                 Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).FilterByTagCommand}" 
+                                                 CommandParameter="{Binding .}"
+                                                 Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
                 
@@ -72,51 +106,65 @@
             </Border>
 
             <!-- Loading Indicator -->
-            <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsLoading}" VerticalAlignment="Top"/>
+            <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsLoading}" VerticalAlignment="Top" ZIndex="1"/>
 
             <!-- Gallery Grid -->
-            <ScrollViewer Grid.Row="1">
-                <ItemsControl ItemsSource="{Binding Gallery.Clips}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="vm:ClipViewModel">
-                            <Border Width="240" Height="180" Margin="10" Background="#2d2d2d" CornerRadius="8" ClipToBounds="True">
-                                <Button Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenPlayerCommand}" 
-                                        CommandParameter="{Binding .}"
-                                        Background="Transparent" Padding="0" Margin="0" BorderThickness="0">
-                                    <Grid RowDefinitions="*, Auto">
-                                        <!-- Thumbnail / Loading / Failed -->
-                                        <Panel Grid.Row="0" Background="#000">
-                                             <TextBlock Text="Loading..." IsVisible="{Binding IsLoadingThumbnail}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#505050"/>
-                                             <TextBlock Text="No Preview" IsVisible="{Binding IsThumbnailFailed}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AA3333" FontWeight="Bold"/>
-                                             <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding !IsLoadingThumbnail}"/>
-                                             <!-- Note: Image will be null if failed, so it won't show anything anyway, but binding IsVisible is safer if we reuse the vm -->
-                                        </Panel>
-                                        
-                                        <!-- Info -->
-                                        <StackPanel Grid.Row="1" Margin="8">
-                                            <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontWeight="Medium"/>
-                                            <Grid ColumnDefinitions="*, Auto">
-                                                <TextBlock Text="{Binding GameName}" FontSize="12" Foreground="#808080" VerticalAlignment="Center"/>
-                                                <controls:RatingControl Value="{Binding Rating}" Height="12" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </StackPanel>
-                                        
-                                        <!-- Duration Overlay -->
-                                        <Border Grid.Row="0" Background="#80000000" CornerRadius="4" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="4" Padding="4,2">
-                                            <TextBlock Text="{Binding DurationDisplay}" FontSize="11" Foreground="White" />
-                                        </Border>
-                                    </Grid>
-                                </Button>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <ListBox Grid.Row="1" 
+                     ItemsSource="{Binding Gallery.Clips}"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="5"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="vm:ClipViewModel">
+                        <Border Width="240" Height="180" Background="#2d2d2d" CornerRadius="8" ClipToBounds="True">
+                            <Button Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenPlayerCommand}" 
+                                    CommandParameter="{Binding .}"
+                                    Background="Transparent" Padding="0" Margin="0" BorderThickness="0">
+                                <Grid RowDefinitions="*, Auto">
+                                    <!-- Thumbnail / Loading / Failed -->
+                                    <Panel Grid.Row="0" Background="#000">
+                                         <TextBlock Text="Loading..." IsVisible="{Binding IsLoadingThumbnail}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#505050"/>
+                                         <TextBlock Text="No Preview" IsVisible="{Binding IsThumbnailFailed}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AA3333" FontWeight="Bold"/>
+                                         <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding !IsLoadingThumbnail}"/>
+                                    </Panel>
+                                    
+                                    <!-- Info -->
+                                    <StackPanel Grid.Row="1" Margin="8">
+                                        <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontWeight="Medium"/>
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding GameName}" FontSize="12" Foreground="#808080" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <controls:RatingControl Grid.Column="1" Value="{Binding Rating}" Height="12" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    
+                                    <!-- Duration Overlay -->
+                                    <Border Grid.Row="0" Background="#80000000" CornerRadius="4" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="4" Padding="4,2">
+                                        <TextBlock Text="{Binding DurationDisplay}" FontSize="11" Foreground="White" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </Grid>
         
         <!-- Player Overlay -->

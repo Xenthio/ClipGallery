@@ -28,6 +28,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
+    [ObservableProperty]
+    private bool _isLibraryExpanded = true;
+
+    [ObservableProperty]
+    private bool _isTagsExpanded = true;
+
     public MainViewModel(IClipScannerService scannerService, IAudioExtractionService audioService,
         ITranscodeService transcodeService, ISettingsService settingsService, IServiceProvider serviceProvider)
     {
@@ -158,5 +164,17 @@ public partial class MainViewModel : ObservableObject
     {
         CurrentPlayer?.Dispose();
         CurrentPlayer = null;
+    }
+
+    [RelayCommand]
+    public void ToggleLibraryExpanded()
+    {
+        IsLibraryExpanded = !IsLibraryExpanded;
+    }
+
+    [RelayCommand]
+    public void ToggleTagsExpanded()
+    {
+        IsTagsExpanded = !IsTagsExpanded;
     }
 }

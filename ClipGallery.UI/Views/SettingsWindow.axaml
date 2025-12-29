@@ -11,7 +11,15 @@
         
     <Border BorderBrush="#333" BorderThickness="1">
         <Grid RowDefinitions="Auto, *, Auto" Margin="20">
-            <TextBlock Text="Library Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+            <!-- Header with close button -->
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBlock Grid.Column="0" Text="Library Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+                <Button Grid.Column="1" Content="✕" 
+                        Click="OnCloseClick"
+                        Background="Transparent" Foreground="#AAA" 
+                        FontSize="16" Padding="8,4"
+                        VerticalAlignment="Top"/>
+            </Grid>
             
             <StackPanel Grid.Row="1" Spacing="10">
                 <TextBlock Text="Watch Folders" FontWeight="SemiBold" Foreground="#AAA"/>
@@ -19,13 +27,15 @@
                 <ItemsControl ItemsSource="{Binding LibraryPaths}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="#2d2d2d" Padding="10" CornerRadius="4">
+                            <Border Background="#2d2d2d" Padding="10" CornerRadius="4" Margin="0,2">
                                 <Grid ColumnDefinitions="*, Auto">
-                                    <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
-                                    <Button Content="X" 
+                                    <TextBlock Grid.Column="0" Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <Button Grid.Column="1" Content="✕" 
                                             Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemovePathCommand}"
                                             CommandParameter="{Binding}"
-                                            Background="Transparent" Foreground="#FF5555" Margin="10,0,0,0"/>
+                                            Background="Transparent" Foreground="#FF5555" 
+                                            Padding="8,4" Margin="10,0,0,0"
+                                            FontWeight="Bold"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -39,7 +49,10 @@
             </StackPanel>
             
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
-                <Button Content="Save &amp; Restart" 
+                <Button Content="Cancel" 
+                        Click="OnCloseClick"
+                        Background="#404040" Foreground="#AAA"/>
+                <Button Content="Save &amp; Apply" 
                         Command="{Binding SaveAndCloseCommand}" 
                         CommandParameter="{Binding $parent[Window]}"
                         Background="#007ACC" Foreground="White" FontWeight="Bold"/>

@@ -1,9 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ClipGallery.Core.Models;
 using System.Collections.ObjectModel;
-using System.Collections.ObjectModel;
-using System.Collections.Generic; // Added
-using System.Linq; // Added
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ClipGallery.UI.ViewModels;
 
