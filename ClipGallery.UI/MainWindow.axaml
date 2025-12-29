@@ -122,7 +122,7 @@
             <!-- Loading Indicator -->
             <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsLoading}" VerticalAlignment="Top" ZIndex="1"/>
 
-            <!-- Gallery Grid -->
+            <!-- Gallery Grid with Virtualization -->
             <ListBox Grid.Row="1" 
                      ItemsSource="{Binding Gallery.Clips}"
                      Background="Transparent"
@@ -130,7 +130,7 @@
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel />
+                        <VirtualizingStackPanel Orientation="Vertical"/>
                     </ItemsPanelTemplate>
                 </ListBox.ItemsPanel>
                 <ListBox.Styles>
@@ -148,7 +148,7 @@
                 </ListBox.Styles>
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="vm:ClipViewModel">
-                        <Border Width="240" Height="180" Background="#2d2d2d" CornerRadius="8" ClipToBounds="True">
+                        <Border Background="#2d2d2d" CornerRadius="8" ClipToBounds="True" Margin="0,2">
                             <Border.ContextMenu>
                                 <ContextMenu Opened="OnClipContextMenuOpened">
                                     <MenuItem Header="Play" 
@@ -196,28 +196,30 @@
                             </Border.ContextMenu>
                             <Button Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenPlayerCommand}" 
                                     CommandParameter="{Binding .}"
-                                    Background="Transparent" Padding="0" Margin="0" BorderThickness="0">
-                                <Grid RowDefinitions="*, Auto">
-                                    <!-- Thumbnail / Loading / Failed -->
-                                    <Panel Grid.Row="0" Background="#000">
-                                         <TextBlock Text="Loading..." IsVisible="{Binding IsLoadingThumbnail}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#505050"/>
-                                         <TextBlock Text="No Preview" IsVisible="{Binding IsThumbnailFailed}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AA3333" FontWeight="Bold"/>
-                                         <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding !IsLoadingThumbnail}"/>
-                                    </Panel>
+                                    Background="Transparent" Padding="0" Margin="0" BorderThickness="0"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                <Grid ColumnDefinitions="160, *" Height="90">
+                                    <!-- Thumbnail -->
+                                    <Border Grid.Column="0" Background="#000" CornerRadius="8,0,0,8" ClipToBounds="True">
+                                        <Panel>
+                                            <TextBlock Text="Loading..." IsVisible="{Binding IsLoadingThumbnail}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#505050"/>
+                                            <TextBlock Text="No Preview" IsVisible="{Binding IsThumbnailFailed}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AA3333" FontWeight="Bold"/>
+                                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding !IsLoadingThumbnail}"/>
+                                            <!-- Duration Overlay -->
+                                            <Border Background="#80000000" CornerRadius="4" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="4" Padding="4,2">
+                                                <TextBlock Text="{Binding DurationDisplay}" FontSize="11" Foreground="White"/>
+                                            </Border>
+                                        </Panel>
+                                    </Border>
                                     
                                     <!-- Info -->
-                                    <StackPanel Grid.Row="1" Margin="8">
-                                        <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontWeight="Medium"/>
-                                        <Grid ColumnDefinitions="*, Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding DisplayGameName}" FontSize="12" Foreground="#808080" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            <controls:RatingControl Grid.Column="1" Value="{Binding Rating}" Height="12" VerticalAlignment="Center"/>
-                                        </Grid>
+                                    <StackPanel Grid.Column="1" Margin="12,8" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontWeight="Medium" FontSize="14"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="15" Margin="0,5,0,0">
+                                            <TextBlock Text="{Binding DisplayGameName}" FontSize="12" Foreground="#808080"/>
+                                            <controls:RatingControl Value="{Binding Rating}" Height="14"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                    
-                                    <!-- Duration Overlay -->
-                                    <Border Grid.Row="0" Background="#80000000" CornerRadius="4" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="4" Padding="4,2">
-                                        <TextBlock Text="{Binding DurationDisplay}" FontSize="11" Foreground="White" />
-                                    </Border>
                                 </Grid>
                             </Button>
                         </Border>
