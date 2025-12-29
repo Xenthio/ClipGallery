@@ -33,7 +33,8 @@ public partial class PlayerWindow : Window
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to start playback: {ex}");
+            Title = "ClipGallery - Playback failed to start";
+            Console.Error.WriteLine($"Failed to start playback: {ex}");
         }
     }
 

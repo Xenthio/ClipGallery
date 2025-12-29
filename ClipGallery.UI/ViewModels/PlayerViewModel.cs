@@ -17,6 +17,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 {
     private readonly LibVLC _libVlc;
     private readonly MediaPlayer _mediaPlayer;
+    private Media? _media;
     private readonly IAudioExtractionService _audioService;
     private readonly IClipScannerService _scannerService; // Injected
     private readonly ITranscodeService _transcodeService; // Injected
@@ -124,18 +125,18 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     private async Task InitializeAsync()
     {
-        using var media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
-        _mediaPlayer.Media = media;
+        _media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
+        _mediaPlayer.Media = _media;
 
         await LoadAudioTracks(); // Call the new method
     }
 
     private bool _playbackStarted;
-    private readonly object _playbackLock = new();
+    private readonly object _playbackStartLock = new();
 
     public async Task StartPlaybackAsync()
     {
-        lock (_playbackLock)
+        lock (_playbackStartLock)
         {
             if (_playbackStarted) return;
             _playbackStarted = true;
@@ -343,6 +344,10 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _secondaryPlayer?.Stop();
         _secondaryPlayer?.Dispose();
         _secondaryAudioFileReader?.Dispose();
+
+        _mediaPlayer.Media = null;
+        _media?.Dispose();
+        _media = null;
 
         // Dispose VLC resources last
         _mediaPlayer.Dispose();
