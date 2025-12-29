@@ -125,6 +125,12 @@ public class ClipScannerService : IClipScannerService
         // Generate Thumbnail
         await _thumbnailService.GenerateThumbnailAsync(clip);
     }
+    
+    public async Task EnrichClipMetadataAsync(Clip clip)
+    {
+        // Enrich metadata only (Duration, Streams) - no thumbnail
+        await _metadataService.EnrichClipAsync(clip);
+    }
 
     public async Task SaveClipAsync(Clip clip)
     {

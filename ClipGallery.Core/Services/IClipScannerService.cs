@@ -15,6 +15,9 @@ public interface IClipScannerService
 
     // Enrich with metadata and ensure thumbnail exists
     Task EnrichClipAsync(Clip clip);
+    
+    // Enrich with metadata only (no thumbnail)
+    Task EnrichClipMetadataAsync(Clip clip);
 
     // Start watching a directory for changes
     void StartWatching(string path);

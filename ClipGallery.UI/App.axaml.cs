@@ -28,6 +28,7 @@ public partial class App : Application
         services.AddSingleton<IClipScannerService, ClipScannerService>();
         services.AddSingleton<IMetadataService, MetadataService>();
         services.AddSingleton<IThumbnailService, ThumbnailService>();
+        services.AddSingleton<IThumbnailPriorityService, ThumbnailPriorityService>();
         services.AddSingleton<IAudioExtractionService, AudioExtractionService>();
         services.AddSingleton<ITranscodeService, TranscodeService>();
 

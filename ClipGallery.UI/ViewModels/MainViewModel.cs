@@ -20,6 +20,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IAudioExtractionService _audioService;
     private readonly ITranscodeService _transcodeService;
     private readonly ISettingsService _settingsService;
+    private readonly IThumbnailPriorityService _thumbnailPriorityService;
     private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
@@ -47,14 +48,19 @@ public partial class MainViewModel : ObservableObject
     }
 
     public MainViewModel(IClipScannerService scannerService, IAudioExtractionService audioService,
-        ITranscodeService transcodeService, ISettingsService settingsService, IServiceProvider serviceProvider)
+        ITranscodeService transcodeService, ISettingsService settingsService, 
+        IThumbnailPriorityService thumbnailPriorityService, IServiceProvider serviceProvider)
     {
         _scannerService = scannerService;
         _audioService = audioService;
         _transcodeService = transcodeService;
         _settingsService = settingsService;
+        _thumbnailPriorityService = thumbnailPriorityService;
         _serviceProvider = serviceProvider;
         _gallery = new GalleryViewModel();
+        
+        // Subscribe to displayed clips changes to prioritize visible thumbnails
+        _gallery.DisplayedClipsChanged += OnDisplayedClipsChanged;
 
         _settingsService.SettingsUpdated += async (s, e) =>
         {
@@ -66,9 +72,33 @@ public partial class MainViewModel : ObservableObject
             Gallery.Clips.Clear();
             await InitializeLibraryAsync();
         };
+        
+        // Start thumbnail priority service
+        _thumbnailPriorityService.Start();
 
         // Start scanning in background
         _ = InitializeLibraryAsync();
+    }
+
+    private void OnDisplayedClipsChanged(object? sender, IReadOnlyList<ClipViewModel> displayedClips)
+    {
+        // Load thumbnails for newly visible clips
+        foreach (var vm in displayedClips)
+        {
+            if (vm.Thumbnail == null && !vm.IsThumbnailFailed)
+            {
+                // If thumbnail file exists, load it immediately (high priority)
+                if (vm.HasThumbnailFile)
+                {
+                    _ = Dispatcher.UIThread.InvokeAsync(() => _ = vm.LoadThumbnailAsync());
+                }
+                else
+                {
+                    // Thumbnail needs to be generated - bump priority
+                    _thumbnailPriorityService.PrioritizeClip(vm.Model);
+                }
+            }
+        }
     }
 
     private async Task InitializeLibraryAsync()
@@ -112,14 +142,32 @@ public partial class MainViewModel : ObservableObject
         Gallery.LoadClips(vms);
         IsLoading = false;
 
-        // 3. Background Enrichment (Metadata + Thumbnails)
+        // 3. Background Enrichment (Metadata only - thumbnails loaded on demand when visible)
         _ = Task.Run(async () =>
         {
             foreach (var vm in vms)
             {
-                await _scannerService.EnrichClipAsync(vm.Model);
-                vm.UpdateDuration();
-                await vm.LoadThumbnailAsync();
+                // Enrich metadata first (fast)
+                await _scannerService.EnrichClipMetadataAsync(vm.Model);
+                _ = Dispatcher.UIThread.InvokeAsync(() => vm.UpdateDuration());
+                
+                // Only queue thumbnail generation if file doesn't exist
+                // Thumbnails are loaded on-demand when clips become visible
+                if (!vm.HasThumbnailFile)
+                {
+                    _thumbnailPriorityService.RequestThumbnail(vm.Model, highPriority: false, onComplete: () =>
+                    {
+                        _ = Dispatcher.UIThread.InvokeAsync(() => 
+                        {
+                            vm.MarkThumbnailReady();
+                            // Only load if this clip is currently displayed
+                            if (Gallery.DisplayedClips.Contains(vm))
+                            {
+                                _ = vm.LoadThumbnailAsync();
+                            }
+                        });
+                    });
+                }
             }
         });
     }

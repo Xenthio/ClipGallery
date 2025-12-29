@@ -12,6 +12,10 @@ public interface IThumbnailService
 public class ThumbnailService : IThumbnailService
 {
     private const string FFmpegPath = "ffmpeg";
+    
+    // Thumbnail settings - smaller size and higher compression
+    private const int ThumbnailWidth = 320;  // Scale to 320px width (maintains aspect ratio)
+    private const int JpegQuality = 8;       // Higher number = more compression (range 2-31, 8-12 is good balance)
 
     public async Task GenerateThumbnailAsync(Clip clip)
     {
@@ -27,7 +31,8 @@ public class ThumbnailService : IThumbnailService
                     .Add("-ss").Add(time.ToString("0.0"))
                     .Add("-i").Add(clip.FilePath)
                     .Add("-vframes").Add("1")
-                    .Add("-q:v").Add("2") // High quality jpg
+                    .Add("-vf").Add($"scale={ThumbnailWidth}:-1")  // Scale to width, maintain aspect ratio
+                    .Add("-q:v").Add(JpegQuality.ToString())       // More compression (was 2, now 8)
                     .Add("-y") // Overwrite
                     .Add(clip.ThumbnailPath))
                 .ExecuteAsync();

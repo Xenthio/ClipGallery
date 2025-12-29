@@ -13,6 +13,11 @@ public partial class GalleryViewModel : ObservableObject
     private const int PageSize = 100; // Number of clips to load at a time
     
     /// <summary>
+    /// Event fired when displayed clips change (for thumbnail prioritization)
+    /// </summary>
+    public event EventHandler<IReadOnlyList<ClipViewModel>>? DisplayedClipsChanged;
+    
+    /// <summary>
     /// Total count of clips matching current filter (for display purposes)
     /// </summary>
     [ObservableProperty]
@@ -101,6 +106,12 @@ public partial class GalleryViewModel : ObservableObject
 
     private void ApplyFilter()
     {
+        // Unload thumbnails from clips that will no longer be displayed
+        foreach (var clip in DisplayedClips)
+        {
+            clip.UnloadThumbnail();
+        }
+        
         var filtered = _allClips.AsEnumerable();
 
         if (!string.IsNullOrEmpty(_selectedGame))
@@ -170,6 +181,9 @@ public partial class GalleryViewModel : ObservableObject
             {
                 LoadMoreText = $"Scroll for more ({remaining} remaining)";
             }
+            
+            // Notify that displayed clips changed (for thumbnail prioritization)
+            DisplayedClipsChanged?.Invoke(this, nextBatch);
         }
         finally
         {
