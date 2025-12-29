@@ -90,7 +90,7 @@ public partial class GalleryViewModel : ObservableObject
                 c.FileName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                 c.DisplayGameName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                 c.Model.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
-                c.Model.Description.Contains(query, StringComparison.OrdinalIgnoreCase)
+                (c.Model.Description?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
             );
         }
 
