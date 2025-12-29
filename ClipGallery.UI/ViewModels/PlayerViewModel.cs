@@ -66,10 +66,9 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
         // Initialize LibVLC with options to embed video in the window
         _libVlc = new LibVLC(
-            "--no-video-title-show",
-            "--no-osd",
-            "--no-video-deco",        // Disable window decorations
-            "--no-embedded-video"     // Ensure video is not trying to embed in a separate window
+            "--no-video-title-show",  // Don't show video title
+            "--no-osd",                // Disable on-screen display
+            "--no-video-deco"          // Disable window decorations
         );
         _mediaPlayer = new MediaPlayer(_libVlc)
         {

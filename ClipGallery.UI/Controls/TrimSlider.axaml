@@ -50,8 +50,7 @@
         <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Margin="0,5,0,0">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="Start:" Foreground="#888" FontSize="11"/>
-                <TextBlock Text="{Binding #StartTime.Text}" 
-                          x:Name="StartTime"
+                <TextBlock x:Name="StartTime"
                           Foreground="#4CAF50" 
                           FontFamily="Consolas" 
                           FontSize="12" 
@@ -59,7 +58,6 @@
             </StackPanel>
             
             <TextBlock Grid.Column="1" 
-                      Text="{Binding #DurationText.Text}"
                       x:Name="DurationText"
                       HorizontalAlignment="Center"
                       Foreground="#AAA" 
@@ -67,8 +65,7 @@
             
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
                 <TextBlock Text="End:" Foreground="#888" FontSize="11"/>
-                <TextBlock Text="{Binding #EndTime.Text}"
-                          x:Name="EndTime"
+                <TextBlock x:Name="EndTime"
                           Foreground="#FF9800" 
                           FontFamily="Consolas" 
                           FontSize="12" 
