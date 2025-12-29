@@ -165,7 +165,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
             _playbackStarted = true;
         }
-        catch
+        catch (Exception ex)
         {
             if (handlersSubscribed)
             {
@@ -175,6 +175,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
                 _mediaPlayer.Stopped -= OnMediaPlayerStopped;
             }
             _mediaPlayer.Stop();
+            Console.Error.WriteLine($"Failed to start playback: {ex}");
             throw;
         }
         finally
