@@ -9,6 +9,7 @@ using System.Threading.Tasks; // Added
 using System.Linq; // Added
 using System.Collections.Generic; // Added
 using System.IO; // Added
+using System.Threading;
 
 namespace ClipGallery.UI.ViewModels;
 
@@ -20,6 +21,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private readonly IClipScannerService _scannerService; // Injected
     private readonly ITranscodeService _transcodeService; // Injected
     private readonly Task _initTask;
+    private Media? _media;
 
     private IWavePlayer? _secondaryPlayer;
     private AudioFileReader? _secondaryAudioFileReader;
@@ -80,10 +82,12 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     private Task InitializeAsync()
     {
-        using var media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
-        _mediaPlayer.Media = media;
+        _media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
+        _mediaPlayer.Media = _media;
 
-        _ = LoadAudioTracks(); // Call the new method
+        _ = LoadAudioTracks() // Fire-and-forget so playback isn't blocked while optional tracks are extracted
+            .ContinueWith(t => Console.WriteLine($"Audio track extraction failed: {t.Exception?.GetBaseException().Message}"),
+                TaskContinuationOptions.OnlyOnFaulted);
 
         // Setup Sync (rough implementation)
         _mediaPlayer.TimeChanged += OnVlcTimeChanged;
@@ -109,7 +113,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private string _totalTimeDisplay = "00:00";
 
     private bool _isUpdatingPosition;
-    private bool _isSyncingTrim;
+    private int _isSyncingTrim;
     private bool _hasAppliedDuration;
 
     private void OnVlcTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
@@ -140,16 +144,24 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
             var duration = _mediaPlayer.Length / 1000.0;
             DurationSeconds = duration;
 
-            _isSyncingTrim = true;
-            if (TrimEnd <= 0 || TrimEnd > duration)
+            if (Interlocked.CompareExchange(ref _isSyncingTrim, 1, 0) == 0)
             {
-                TrimEnd = duration;
+                try
+                {
+                    if (TrimEnd <= 0 || TrimEnd > duration)
+                    {
+                        TrimEnd = duration;
+                    }
+                    if (TrimStart > TrimEnd)
+                    {
+                        TrimStart = TrimEnd;
+                    }
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _isSyncingTrim, 0);
+                }
             }
-            if (TrimStart > TrimEnd)
-            {
-                TrimStart = TrimEnd;
-            }
-            _isSyncingTrim = false;
         }
 
         // Simple Sync: Check if drift > 100ms
@@ -167,15 +179,24 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     partial void OnTrimStartChanged(double value)
     {
-        if (_isSyncingTrim) return;
-
-        var clamped = Math.Max(0, value);
-        if (clamped > TrimEnd)
+        if (Interlocked.CompareExchange(ref _isSyncingTrim, 1, 0) == 1)
         {
-            _isSyncingTrim = true;
-            TrimStart = TrimEnd;
-            _isSyncingTrim = false;
-            clamped = TrimStart;
+            // Re-entrant change triggered by our own clamping; skip to avoid infinite loops
+            return;
+        }
+
+        double clamped;
+        try
+        {
+            clamped = ClampTrimValue(value, isStart: true);
+            if (Math.Abs(clamped - value) > double.Epsilon)
+            {
+                TrimStart = clamped;
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _isSyncingTrim, 0);
         }
 
         PreviewFrameAt(clamped);
@@ -183,20 +204,44 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     partial void OnTrimEndChanged(double value)
     {
-        if (_isSyncingTrim) return;
-
-        var limit = DurationSeconds > 0 ? DurationSeconds : double.MaxValue;
-        var clamped = Math.Min(limit, value);
-
-        if (clamped < TrimStart)
+        if (Interlocked.CompareExchange(ref _isSyncingTrim, 1, 0) == 1)
         {
-            _isSyncingTrim = true;
-            TrimEnd = TrimStart;
-            _isSyncingTrim = false;
-            clamped = TrimEnd;
+            // Re-entrant change triggered by our own clamping; skip to avoid infinite loops
+            return;
+        }
+
+        double clamped;
+        try
+        {
+            clamped = ClampTrimValue(value, isStart: false);
+            if (Math.Abs(clamped - value) > double.Epsilon)
+            {
+                TrimEnd = clamped;
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _isSyncingTrim, 0);
         }
 
         PreviewFrameAt(clamped);
+    }
+
+    private double ClampTrimValue(double value, bool isStart)
+    {
+        var max = DurationSeconds > 0 ? DurationSeconds : double.MaxValue;
+        var clamped = Math.Clamp(value, 0, max);
+
+        if (isStart && clamped > TrimEnd)
+        {
+            clamped = TrimEnd;
+        }
+        else if (!isStart && clamped < TrimStart)
+        {
+            clamped = TrimStart;
+        }
+
+        return clamped;
     }
 
     private void PreviewFrameAt(double seconds)
@@ -319,7 +364,16 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     public async Task StartPlaybackAsync()
     {
-        await _initTask;
+        try
+        {
+            await _initTask;
+        }
+        catch (Exception ex)
+        {
+            // Initialization failed; surface the error but don't crash the app from fire-and-forget calls
+            Console.WriteLine($"Player initialization failed: {ex.Message}");
+            return;
+        }
         if (_mediaPlayer.IsPlaying) return;
 
         _mediaPlayer.Play();
@@ -329,6 +383,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _mediaPlayer.Dispose();
+        _media?.Dispose();
         _libVlc.Dispose();
         _secondaryPlayer?.Dispose();
         _secondaryAudioFileReader?.Dispose();

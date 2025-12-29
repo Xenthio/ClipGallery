@@ -59,7 +59,8 @@
                         <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                             <controls:RatingControl Value="{Binding RatingInput}" Height="24"/>
                             <TextBox Text="{Binding TagsInput}" Width="220" Watermark="Add tags (comma separated)" 
-                                     Background="#222" BorderThickness="0" Padding="8,6"/>
+                                     Background="#222" BorderThickness="0" Padding="8,6"
+                                     AutomationProperties.Name="Tags input"/>
                             <Button Content="Save" Command="{Binding SaveMetadataCommand}" 
                                     Background="#404040" Foreground="#CCC" Padding="15,6" CornerRadius="4"
                                     ToolTip.Tip="Save rating and tags"/>
@@ -110,10 +111,24 @@
                         <!-- Trim slider row -->
                         <Grid Grid.Row="1" Grid.ColumnSpan="3" RowDefinitions="Auto,Auto" RowSpacing="6">
                             <Grid>
-                                <Slider Minimum="0" Maximum="{Binding DurationSeconds, FallbackValue=1}" Value="{Binding TrimStart}" 
-                                        Height="18"/>
-                                <Slider Minimum="0" Maximum="{Binding DurationSeconds, FallbackValue=1}" Value="{Binding TrimEnd}" 
-                                        Height="18"/>
+                                <Slider x:Name="TrimStartSlider"
+                                        Minimum="0"
+                                        Maximum="{Binding DurationSeconds, FallbackValue=1}"
+                                        Value="{Binding TrimStart}"
+                                        Height="18"
+                                        ToolTip.Tip="Drag to set trim start"
+                                        AutomationProperties.Name="Trim start handle"
+                                        AutomationProperties.HelpText="Defines where the clip begins"
+                                        TabIndex="0"/>
+                                <Slider x:Name="TrimEndSlider"
+                                        Minimum="0"
+                                        Maximum="{Binding DurationSeconds, FallbackValue=1}"
+                                        Value="{Binding TrimEnd}"
+                                        Height="18"
+                                        ToolTip.Tip="Drag to set trim end"
+                                        AutomationProperties.Name="Trim end handle"
+                                        AutomationProperties.HelpText="Defines where the clip ends"
+                                        TabIndex="1"/>
                             </Grid>
                             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2">
                                 <TextBlock Text="{Binding TrimStart, StringFormat='Start: {0:F2}s'}" Foreground="#77FFFFFF" FontSize="11"/>
