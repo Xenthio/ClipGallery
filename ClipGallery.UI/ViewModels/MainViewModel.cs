@@ -89,13 +89,20 @@ public partial class MainViewModel : ObservableObject
             _scannerService.StartWatching(path);
         }
 
-        // 2. Wrap via ViewModels and apply aliases
+        // 2. Wrap via ViewModels and apply aliases (from both legacy aliases and registered games)
         var aliases = _settingsService.Settings.GameAliases;
+        var registeredGames = _settingsService.Settings.RegisteredGames;
         var vms = clips.Select(c => 
         {
             var vm = new ClipViewModel(c, _scannerService);
-            // Apply game alias if configured
-            if (aliases.TryGetValue(c.GameName, out var displayName))
+            // Apply display name from registered games first
+            var registeredGame = registeredGames.FirstOrDefault(g => g.FolderNames.Contains(c.GameName));
+            if (registeredGame != null)
+            {
+                vm.DisplayGameName = registeredGame.DisplayName;
+            }
+            // Fall back to legacy game alias
+            else if (aliases.TryGetValue(c.GameName, out var displayName))
             {
                 vm.DisplayGameName = displayName;
             }
@@ -117,17 +124,28 @@ public partial class MainViewModel : ObservableObject
         });
     }
 
+    private string GetDisplayGameName(string folderName)
+    {
+        var registeredGame = _settingsService.Settings.RegisteredGames.FirstOrDefault(g => g.FolderNames.Contains(folderName));
+        if (registeredGame != null)
+        {
+            return registeredGame.DisplayName;
+        }
+        if (_settingsService.Settings.GameAliases.TryGetValue(folderName, out var displayName))
+        {
+            return displayName;
+        }
+        return folderName;
+    }
+
     private void OnClipAdded(object? sender, Clip clip)
     {
         Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var vm = new ClipViewModel(clip, _scannerService);
             
-            // Apply game alias if configured
-            if (_settingsService.Settings.GameAliases.TryGetValue(clip.GameName, out var displayName))
-            {
-                vm.DisplayGameName = displayName;
-            }
+            // Apply display name
+            vm.DisplayGameName = GetDisplayGameName(clip.GameName);
             
             Gallery.Clips.Insert(0, vm); // Add to top
 
@@ -180,8 +198,27 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void OpenSettings()
     {
+        OpenSettingsWithGame(null);
+    }
+    
+    [RelayCommand]
+    public void EditGame(string? gameName)
+    {
+        OpenSettingsWithGame(gameName);
+    }
+    
+    private void OpenSettingsWithGame(string? gameName)
+    {
         var vm = _serviceProvider.GetService(typeof(SettingsViewModel)) as SettingsViewModel;
         if (vm == null) return;
+
+        // If game name provided, switch to Games tab and create/select the game
+        if (!string.IsNullOrEmpty(gameName))
+        {
+            vm.SelectedTabIndex = 1; // Games tab
+            var game = vm.CreateGameFromFolder(gameName);
+            vm.SelectedGame = game;
+        }
 
         var win = new Views.SettingsWindow
         {

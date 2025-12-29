@@ -49,7 +49,15 @@
                                          <Button Content="{Binding .}" 
                                                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).FilterByGameCommand}" 
                                                  CommandParameter="{Binding .}"
-                                                 Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2"/>
+                                                 Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2">
+                                             <Button.ContextMenu>
+                                                 <ContextMenu>
+                                                     <MenuItem Header="Edit Game..." 
+                                                               Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditGameCommand}"
+                                                               CommandParameter="{Binding .}"/>
+                                                 </ContextMenu>
+                                             </Button.ContextMenu>
+                                         </Button>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

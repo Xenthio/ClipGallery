@@ -3,103 +3,227 @@
         xmlns:vm="using:ClipGallery.UI.ViewModels"
         x:Class="ClipGallery.UI.Views.SettingsWindow"
         x:DataType="vm:SettingsViewModel"
-        Width="550" Height="550"
+        Width="800" Height="600"
         WindowStartupLocation="CenterOwner"
         SystemDecorations="BorderOnly"
         Background="#1a1a1a"
         Title="Settings">
         
     <Border BorderBrush="#333" BorderThickness="1">
-        <Grid RowDefinitions="Auto, *, Auto" Margin="20">
-            <!-- Header with close button -->
-            <Grid ColumnDefinitions="*, Auto">
-                <TextBlock Grid.Column="0" Text="Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
-                <Button Grid.Column="1" Content="✕" 
+        <Grid ColumnDefinitions="200, *">
+            <!-- Settings Sidebar -->
+            <Border Grid.Column="0" Background="#202020" Padding="10">
+                <Grid RowDefinitions="Auto, *, Auto">
+                    <TextBlock Grid.Row="0" Text="Settings" FontSize="20" FontWeight="Bold" Margin="10,10,10,20"/>
+                    
+                    <StackPanel Grid.Row="1" Spacing="2">
+                        <Button Content="📁 Watch Folders" 
+                                Click="OnSelectTab0"
+                                Background="Transparent"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" 
+                                Padding="15,10"/>
+                        <Button Content="🎮 Games" 
+                                Click="OnSelectTab1"
+                                Background="Transparent"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" 
+                                Padding="15,10"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Row="2" Spacing="5">
+                        <Button Content="Cancel" 
+                                Click="OnCloseClick"
+                                Background="#404040" Foreground="#AAA" 
+                                HorizontalAlignment="Stretch" Padding="15,8"/>
+                        <Button Content="Save &amp; Apply" 
+                                Command="{Binding SaveAndCloseCommand}" 
+                                CommandParameter="{Binding $parent[Window]}"
+                                Background="#007ACC" Foreground="White" FontWeight="Bold" 
+                                HorizontalAlignment="Stretch" Padding="15,8"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- Main Content Area -->
+            <Grid Grid.Column="1">
+                <!-- Close button -->
+                <Button Content="✕" 
                         Click="OnCloseClick"
                         Background="Transparent" Foreground="#AAA" 
                         FontSize="16" Padding="8,4"
-                        VerticalAlignment="Top"/>
-            </Grid>
-            
-            <ScrollViewer Grid.Row="1">
-                <StackPanel Spacing="20">
-                    <!-- Watch Folders Section -->
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="WATCH FOLDERS" FontWeight="Bold" Foreground="#666" FontSize="11"/>
-                        
-                        <ItemsControl ItemsSource="{Binding LibraryPaths}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="#2d2d2d" Padding="10" CornerRadius="4" Margin="0,2">
-                                        <Grid ColumnDefinitions="*, Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            <Button Grid.Column="1" Content="✕" 
-                                                    Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemovePathCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Background="Transparent" Foreground="#FF5555" 
-                                                    Padding="8,4" Margin="10,0,0,0"
-                                                    FontWeight="Bold"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        
-                        <Button Content="+ Add Folder..." 
-                                Command="{Binding AddPathCommand}" 
-                                CommandParameter="{Binding $parent[Window]}"
-                                HorizontalAlignment="Left" Padding="15,8"
-                                Background="#333" Foreground="#AAA"/>
-                    </StackPanel>
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Margin="10" ZIndex="1"/>
+                
+                <TabControl x:Name="TabHost" SelectedIndex="{Binding SelectedTabIndex}" 
+                            Background="Transparent" Padding="0">
+                    <TabControl.Styles>
+                        <Style Selector="TabItem">
+                            <Setter Property="IsVisible" Value="False"/>
+                        </Style>
+                    </TabControl.Styles>
                     
-                    <!-- Game Aliases Section (Merging) -->
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="GAME ALIASES (Merge Games)" FontWeight="Bold" Foreground="#666" FontSize="11"/>
-                        <TextBlock Text="Map folder names to display names to visually merge games with different folder names." 
-                                   Foreground="#888" FontSize="12" TextWrapping="Wrap"/>
-                        
-                        <ItemsControl ItemsSource="{Binding GameAliases}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="vm:GameAliasViewModel">
-                                    <Border Background="#2d2d2d" Padding="10" CornerRadius="4" Margin="0,2">
-                                        <Grid ColumnDefinitions="*, Auto, *, Auto">
-                                            <TextBox Grid.Column="0" Text="{Binding FolderName}" 
-                                                     Watermark="Folder name..." 
-                                                     Background="#222" BorderThickness="0" Padding="8,5"/>
-                                            <TextBlock Grid.Column="1" Text="→" Foreground="#666" 
-                                                       VerticalAlignment="Center" Margin="10,0"/>
-                                            <TextBox Grid.Column="2" Text="{Binding DisplayName}" 
-                                                     Watermark="Display as..." 
-                                                     Background="#222" BorderThickness="0" Padding="8,5"/>
-                                            <Button Grid.Column="3" Content="✕" 
-                                                    Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveGameAliasCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Background="Transparent" Foreground="#FF5555" 
-                                                    Padding="8,4" Margin="10,0,0,0"
-                                                    FontWeight="Bold"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        
-                        <Button Content="+ Add Alias..." 
-                                Command="{Binding AddGameAliasCommand}"
-                                HorizontalAlignment="Left" Padding="15,8"
-                                Background="#333" Foreground="#AAA"/>
-                    </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
-            
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
-                <Button Content="Cancel" 
-                        Click="OnCloseClick"
-                        Background="#404040" Foreground="#AAA" Padding="15,8"/>
-                <Button Content="Save &amp; Apply" 
-                        Command="{Binding SaveAndCloseCommand}" 
-                        CommandParameter="{Binding $parent[Window]}"
-                        Background="#007ACC" Foreground="White" FontWeight="Bold" Padding="15,8"/>
-            </StackPanel>
+                    <!-- Tab 0: Watch Folders -->
+                    <TabItem>
+                        <ScrollViewer Margin="20">
+                            <StackPanel Spacing="15">
+                                <TextBlock Text="Watch Folders" FontSize="18" FontWeight="SemiBold"/>
+                                <TextBlock Text="Add folders that contain your game clips. Clips are organized by subfolder name (game name)." 
+                                           Foreground="#888" TextWrapping="Wrap"/>
+                                
+                                <ItemsControl ItemsSource="{Binding LibraryPaths}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#2d2d2d" Padding="12" CornerRadius="4" Margin="0,2">
+                                                <Grid ColumnDefinitions="*, Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    <Button Grid.Column="1" Content="✕" 
+                                                            Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemovePathCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Background="Transparent" Foreground="#FF5555" 
+                                                            Padding="8,4" Margin="10,0,0,0"
+                                                            FontWeight="Bold"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                
+                                <Button Content="+ Add Folder..." 
+                                        Command="{Binding AddPathCommand}" 
+                                        CommandParameter="{Binding $parent[Window]}"
+                                        HorizontalAlignment="Left" Padding="15,10"
+                                        Background="#333" Foreground="#AAA"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    
+                    <!-- Tab 1: Games Management -->
+                    <TabItem>
+                        <Grid ColumnDefinitions="200, *" Margin="20">
+                            <!-- Games List -->
+                            <Border Grid.Column="0" Background="#252525" CornerRadius="8" Margin="0,0,10,0">
+                                <Grid RowDefinitions="Auto, *, Auto">
+                                    <TextBlock Grid.Row="0" Text="Registered Games" FontWeight="SemiBold" Margin="10"/>
+                                    
+                                    <ListBox Grid.Row="1" 
+                                             ItemsSource="{Binding RegisteredGames}"
+                                             SelectedItem="{Binding SelectedGame}"
+                                             Background="Transparent" BorderThickness="0">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate DataType="vm:RegisteredGameViewModel">
+                                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="5">
+                                                    <Image Source="{Binding IconImage}" Width="24" Height="24" 
+                                                           IsVisible="{Binding IconImage, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                                    <TextBlock Text="🎮" IsVisible="{Binding IconImage, Converter={x:Static ObjectConverters.IsNull}}" 
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    
+                                    <Button Grid.Row="2" Content="+ Add Game" 
+                                            Command="{Binding AddRegisteredGameCommand}"
+                                            HorizontalAlignment="Stretch" Margin="5"
+                                            Background="#333" Foreground="#AAA"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Game Editor -->
+                            <Border Grid.Column="1" Background="#252525" CornerRadius="8" Padding="15"
+                                    IsVisible="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <ScrollViewer>
+                                    <StackPanel Spacing="15" DataContext="{Binding SelectedGame}">
+                                        <TextBlock Text="Edit Game" FontSize="16" FontWeight="SemiBold"/>
+                                        
+                                        <!-- Display Name -->
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Text="Display Name" Foreground="#888"/>
+                                            <TextBox Text="{Binding DisplayName}" Background="#333" Padding="10"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Icon -->
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Text="Icon (24x24)" Foreground="#888"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <Border Background="#333" Width="48" Height="48" CornerRadius="4">
+                                                    <Image Source="{Binding IconImage}" Stretch="Uniform"/>
+                                                </Border>
+                                                <Button Content="Browse..." 
+                                                        Command="{Binding BrowseIconCommand}"
+                                                        CommandParameter="{Binding $parent[Window]}"
+                                                        VerticalAlignment="Center" Padding="15,8"
+                                                        Background="#333" Foreground="#AAA"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <!-- Box Art -->
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Text="Box Art" Foreground="#888"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <Border Background="#333" Width="80" Height="100" CornerRadius="4">
+                                                    <Image Source="{Binding BoxArtImage}" Stretch="Uniform"/>
+                                                </Border>
+                                                <Button Content="Browse..." 
+                                                        Command="{Binding BrowseBoxArtCommand}"
+                                                        CommandParameter="{Binding $parent[Window]}"
+                                                        VerticalAlignment="Center" Padding="15,8"
+                                                        Background="#333" Foreground="#AAA"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <!-- Folder Names -->
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Text="Folder Names (clips from these folders will be grouped under this game)" 
+                                                       Foreground="#888" TextWrapping="Wrap"/>
+                                            
+                                            <ItemsControl ItemsSource="{Binding FolderNames}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="#333" Padding="8" CornerRadius="4" Margin="0,2">
+                                                            <Grid ColumnDefinitions="*, Auto">
+                                                                <TextBlock Grid.Column="0" Text="{Binding}" VerticalAlignment="Center"/>
+                                                                <Button Grid.Column="1" Content="✕" 
+                                                                        Command="{Binding $parent[ItemsControl].((vm:RegisteredGameViewModel)DataContext).RemoveFolderNameCommand}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="Transparent" Foreground="#FF5555" 
+                                                                        Padding="6,2"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBox Text="{Binding NewFolderName}" 
+                                                         Watermark="Enter folder name..." 
+                                                         Background="#333" Width="200" Padding="8"/>
+                                                <Button Content="Add" 
+                                                        Command="{Binding AddFolderNameCommand}"
+                                                        Background="#333" Foreground="#AAA" Padding="15,8"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <Separator Background="#444"/>
+                                        
+                                        <Button Content="Delete Game" 
+                                                Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveRegisteredGameCommand}"
+                                                CommandParameter="{Binding}"
+                                                Background="#552222" Foreground="#FF5555" 
+                                                HorizontalAlignment="Left" Padding="15,8"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                            
+                            <!-- No Game Selected -->
+                            <Border Grid.Column="1" Background="#252525" CornerRadius="8" Padding="15"
+                                    IsVisible="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNull}}">
+                                <TextBlock Text="Select a game from the list or add a new one" 
+                                           Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+            </Grid>
         </Grid>
     </Border>
 </Window>
