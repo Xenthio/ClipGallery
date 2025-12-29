@@ -6,6 +6,7 @@ using LibVLCSharp.Shared;
 using NAudio.Wave;
 using Avalonia.Controls;
 using System;
+using System.Threading;
 using System.Threading.Tasks; // Added
 using System.Linq; // Added
 using System.Collections.Generic; // Added
@@ -17,9 +18,11 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 {
     private readonly LibVLC _libVlc;
     private readonly MediaPlayer _mediaPlayer;
+    private Media? _media;
     private readonly IAudioExtractionService _audioService;
     private readonly IClipScannerService _scannerService; // Injected
     private readonly ITranscodeService _transcodeService; // Injected
+    private readonly Task _initializationTask;
 
     private IWavePlayer? _secondaryPlayer;
     private AudioFileReader? _secondaryAudioFileReader;
@@ -118,25 +121,67 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
             EnableHardwareDecoding = true
         };
         Player = _mediaPlayer; // Bindable property
-
-        InitializeAsync();
+        _initializationTask = InitializeAsync();
     }
 
-    private async void InitializeAsync()
+    private async Task InitializeAsync()
     {
-        using var media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
-        _mediaPlayer.Media = media;
+        try
+        {
+            _media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
+            _mediaPlayer.Media = _media;
 
-        await LoadAudioTracks(); // Call the new method
+            await LoadAudioTracks(); // Call the new method
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to initialize media: {ex}");
+            throw;
+        }
+    }
 
-        _mediaPlayer.Play();
-        _secondaryPlayer?.Play();
+    private bool _playbackStarted;
+    private readonly SemaphoreSlim _playbackStartSemaphore = new(1, 1);
 
-        // Setup Sync (rough implementation)
-        _mediaPlayer.TimeChanged += OnVlcTimeChanged;
-        _mediaPlayer.Paused += OnMediaPlayerPaused;
-        _mediaPlayer.Playing += OnMediaPlayerPlaying;
-        _mediaPlayer.Stopped += OnMediaPlayerStopped;
+    public async Task StartPlaybackAsync()
+    {
+        var handlersSubscribed = false;
+        await _playbackStartSemaphore.WaitAsync();
+        try
+        {
+            if (_playbackStarted) return;
+
+            await _initializationTask;
+
+            // Setup Sync (rough implementation)
+            _mediaPlayer.TimeChanged += OnVlcTimeChanged;
+            _mediaPlayer.Paused += OnMediaPlayerPaused;
+            _mediaPlayer.Playing += OnMediaPlayerPlaying;
+            _mediaPlayer.Stopped += OnMediaPlayerStopped;
+            handlersSubscribed = true;
+
+            _mediaPlayer.Play();
+            _secondaryPlayer?.Play();
+
+            _playbackStarted = true;
+        }
+        catch (Exception ex)
+        {
+            if (handlersSubscribed)
+            {
+                _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+                _mediaPlayer.Paused -= OnMediaPlayerPaused;
+                _mediaPlayer.Playing -= OnMediaPlayerPlaying;
+                _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+            }
+            _mediaPlayer.Stop();
+            Console.Error.WriteLine($"Failed to start playback: {ex}");
+            throw;
+        }
+        finally
+        {
+            _playbackStartSemaphore.Release();
+        }
     }
 
     private void OnMediaPlayerPaused(object? sender, EventArgs e) => _secondaryPlayer?.Pause();
@@ -307,10 +352,13 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         // Unsubscribe all events first to avoid callbacks during disposal
-        _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
-        _mediaPlayer.Paused -= OnMediaPlayerPaused;
-        _mediaPlayer.Playing -= OnMediaPlayerPlaying;
-        _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+        if (_playbackStarted)
+        {
+            _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+            _mediaPlayer.Paused -= OnMediaPlayerPaused;
+            _mediaPlayer.Playing -= OnMediaPlayerPlaying;
+            _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+        }
 
         // Stop playback before disposing to prevent ExecutionEngineException
         try
@@ -327,8 +375,13 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _secondaryPlayer?.Dispose();
         _secondaryAudioFileReader?.Dispose();
 
+        _mediaPlayer.Media = null;
+        _media?.Dispose();
+        _media = null;
+
         // Dispose VLC resources last
         _mediaPlayer.Dispose();
         _libVlc.Dispose();
+        _playbackStartSemaphore.Dispose();
     }
 }

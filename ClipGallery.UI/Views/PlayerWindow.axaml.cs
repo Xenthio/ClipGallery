@@ -2,6 +2,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using ClipGallery.UI.ViewModels;
+using System.Threading.Tasks;
 
 namespace ClipGallery.UI.Views;
 
@@ -11,12 +12,29 @@ public partial class PlayerWindow : Window
     {
         InitializeComponent();
         KeyDown += OnKeyDown;
+        Opened += OnOpened;
 
         var trimSlider = this.FindControl<ClipGallery.UI.Controls.TrimRangeSlider>("TrimSlider");
         if (trimSlider != null)
         {
             trimSlider.StartValueDragging += (s, val) => (DataContext as PlayerViewModel)?.OnTrimDragging(val);
             trimSlider.EndValueDragging += (s, val) => (DataContext as PlayerViewModel)?.OnTrimDragging(val);
+        }
+    }
+
+    private async void OnOpened(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (DataContext is PlayerViewModel vm)
+            {
+                await vm.StartPlaybackAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Title = "ClipGallery - Playback failed to start";
+            Console.Error.WriteLine($"Failed to start playback: {ex}");
         }
     }
 
