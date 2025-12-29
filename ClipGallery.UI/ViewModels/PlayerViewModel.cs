@@ -125,10 +125,18 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     private async Task InitializeAsync()
     {
-        _media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
-        _mediaPlayer.Media = _media;
+        try
+        {
+            _media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
+            _mediaPlayer.Media = _media;
 
-        await LoadAudioTracks(); // Call the new method
+            await LoadAudioTracks(); // Call the new method
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to initialize media: {ex}");
+            throw;
+        }
     }
 
     private bool _playbackStarted;
