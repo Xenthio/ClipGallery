@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ClipGallery.UI.Views.MoveToGameDialog"
+        Width="400" Height="300"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="BorderOnly"
+        Background="#1a1a1a"
+        Title="Move to Game">
+        
+    <Border BorderBrush="#333" BorderThickness="1">
+        <Grid RowDefinitions="Auto, Auto, *, Auto" Margin="20">
+            <TextBlock Text="Select Game" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <TextBlock Grid.Row="1" Text="Move clip to a different game folder" FontSize="12" Foreground="#808080" Margin="0,0,0,10"/>
+            
+            <ListBox Grid.Row="2" x:Name="GamesList" Background="#2d2d2d" Margin="0,0,0,15">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Padding" Value="10,8"/>
+                    </Style>
+                    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                        <Setter Property="Background" Value="#007ACC"/>
+                    </Style>
+                </ListBox.Styles>
+            </ListBox>
+            
+            <Grid Grid.Row="3" ColumnDefinitions="*, Auto, Auto">
+                <TextBox Grid.Column="0" x:Name="NewGameInput" Watermark="Or enter new game name..." Margin="0,0,10,0"/>
+                <Button Grid.Column="1" Content="Cancel" Click="OnCancelClick" Background="#404040" Foreground="#AAA" Margin="0,0,10,0"/>
+                <Button Grid.Column="2" Content="Move" Click="OnMoveClick" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

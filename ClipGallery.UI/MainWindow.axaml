@@ -135,6 +135,51 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="vm:ClipViewModel">
                         <Border Width="240" Height="180" Background="#2d2d2d" CornerRadius="8" ClipToBounds="True">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Play" 
+                                              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenPlayerCommand}"
+                                              CommandParameter="{Binding .}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Rename..." 
+                                              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).RenameClipCommand}"
+                                              CommandParameter="{Binding .}"/>
+                                    <MenuItem Header="Edit Tags..." 
+                                              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditTagsCommand}"
+                                              CommandParameter="{Binding .}"/>
+                                    <MenuItem Header="Set Rating">
+                                        <MenuItem Header="★★★★★ (5)" 
+                                                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SetRatingCommand}"
+                                                  CommandParameter="5"/>
+                                        <MenuItem Header="★★★★☆ (4)" 
+                                                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SetRatingCommand}"
+                                                  CommandParameter="4"/>
+                                        <MenuItem Header="★★★☆☆ (3)" 
+                                                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SetRatingCommand}"
+                                                  CommandParameter="3"/>
+                                        <MenuItem Header="★★☆☆☆ (2)" 
+                                                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SetRatingCommand}"
+                                                  CommandParameter="2"/>
+                                        <MenuItem Header="★☆☆☆☆ (1)" 
+                                                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SetRatingCommand}"
+                                                  CommandParameter="1"/>
+                                        <MenuItem Header="No Rating (0)" 
+                                                  Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).SetRatingCommand}"
+                                                  CommandParameter="0"/>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem Header="Move to Game..." 
+                                              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).MoveToGameCommand}"
+                                              CommandParameter="{Binding .}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Show in Explorer" 
+                                              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowInExplorerCommand}"
+                                              CommandParameter="{Binding .}"/>
+                                    <MenuItem Header="Delete" Foreground="#FF5555"
+                                              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).DeleteClipCommand}"
+                                              CommandParameter="{Binding .}"/>
+                                </ContextMenu>
+                            </Border.ContextMenu>
                             <Button Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenPlayerCommand}" 
                                     CommandParameter="{Binding .}"
                                     Background="Transparent" Padding="0" Margin="0" BorderThickness="0">

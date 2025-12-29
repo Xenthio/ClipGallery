@@ -1,13 +1,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input; // Added for RelayCommand
+using CommunityToolkit.Mvvm.Input;
 using ClipGallery.Core.Services;
-using ClipGallery.Core.Models; // Added for Clip
+using ClipGallery.Core.Models;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Linq; // Added
-using Avalonia.Threading; // Added for Dispatcher
-using Avalonia; // Added for Application
+using System.Linq;
+using System.IO;
+using System.Diagnostics;
+using Avalonia.Threading;
+using Avalonia;
+using Avalonia.Controls;
 
 namespace ClipGallery.UI.ViewModels;
 
@@ -33,6 +36,10 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isTagsExpanded = true;
+
+    // For context menu actions - track currently right-clicked clip
+    [ObservableProperty]
+    private ClipViewModel? _contextClip;
 
     public MainViewModel(IClipScannerService scannerService, IAudioExtractionService audioService,
         ITranscodeService transcodeService, ISettingsService settingsService, IServiceProvider serviceProvider)
@@ -176,5 +183,184 @@ public partial class MainViewModel : ObservableObject
     public void ToggleTagsExpanded()
     {
         IsTagsExpanded = !IsTagsExpanded;
+    }
+
+    // Context Menu Commands
+
+    [RelayCommand]
+    public async Task RenameClip(ClipViewModel? vm)
+    {
+        if (vm == null) return;
+        ContextClip = vm;
+        
+        // Show rename dialog
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+        {
+            var dialog = new Views.RenameDialog(vm.FileName);
+            var result = await dialog.ShowDialog<string?>(desktop.MainWindow);
+            
+            if (!string.IsNullOrWhiteSpace(result) && result != vm.FileName)
+            {
+                try
+                {
+                    var dir = Path.GetDirectoryName(vm.Model.FilePath);
+                    var newPath = Path.Combine(dir!, result);
+                    
+                    // Rename the file
+                    File.Move(vm.Model.FilePath, newPath);
+                    
+                    // Update model
+                    vm.Model.FilePath = newPath;
+                    vm.Model.FileName = result;
+                    vm.RefreshFileProperties();
+                }
+                catch (Exception ex)
+                {
+                    // Show error - in production would use proper dialog
+                    Console.WriteLine($"Rename failed: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task EditTags(ClipViewModel? vm)
+    {
+        if (vm == null) return;
+        ContextClip = vm;
+        
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+        {
+            var dialog = new Views.EditTagsDialog(vm.Model.Tags);
+            var result = await dialog.ShowDialog<List<string>?>(desktop.MainWindow);
+            
+            if (result != null)
+            {
+                vm.Model.Tags = result;
+                await _scannerService.SaveClipAsync(vm.Model);
+                
+                // Update gallery tags
+                Gallery.RefreshTags();
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task SetRating(string ratingStr)
+    {
+        if (ContextClip == null) return;
+        
+        if (int.TryParse(ratingStr, out var rating))
+        {
+            ContextClip.Rating = rating;
+        }
+    }
+
+    [RelayCommand]
+    public async Task MoveToGame(ClipViewModel? vm)
+    {
+        if (vm == null) return;
+        ContextClip = vm;
+        
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+        {
+            var dialog = new Views.MoveToGameDialog(Gallery.Games.ToList(), vm.GameName);
+            var result = await dialog.ShowDialog<string?>(desktop.MainWindow);
+            
+            if (!string.IsNullOrWhiteSpace(result) && result != vm.GameName)
+            {
+                try
+                {
+                    // Find the library path that contains this clip
+                    var currentDir = Path.GetDirectoryName(vm.Model.FilePath)!;
+                    var libraryPath = _settingsService.Settings.LibraryPaths
+                        .FirstOrDefault(p => vm.Model.FilePath.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (libraryPath != null)
+                    {
+                        var newGameDir = Path.Combine(libraryPath, result);
+                        Directory.CreateDirectory(newGameDir);
+                        
+                        var newPath = Path.Combine(newGameDir, vm.Model.FileName);
+                        File.Move(vm.Model.FilePath, newPath);
+                        
+                        // Update model
+                        vm.Model.FilePath = newPath;
+                        vm.Model.GameName = result;
+                        vm.RefreshFileProperties();
+                        
+                        // Refresh games list
+                        Gallery.RefreshGames();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Move failed: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void ShowInExplorer(ClipViewModel? vm)
+    {
+        if (vm == null) return;
+        
+        try
+        {
+            var dir = Path.GetDirectoryName(vm.Model.FilePath);
+            if (dir != null && Directory.Exists(dir))
+            {
+                // Cross-platform open folder
+                if (OperatingSystem.IsWindows())
+                {
+                    Process.Start("explorer.exe", $"/select,\"{vm.Model.FilePath}\"");
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    Process.Start("open", $"-R \"{vm.Model.FilePath}\"");
+                }
+                else if (OperatingSystem.IsLinux())
+                {
+                    Process.Start("xdg-open", dir);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Show in explorer failed: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public async Task DeleteClip(ClipViewModel? vm)
+    {
+        if (vm == null) return;
+        
+        // In production, show confirmation dialog first
+        try
+        {
+            if (File.Exists(vm.Model.FilePath))
+            {
+                File.Delete(vm.Model.FilePath);
+            }
+            
+            // Also delete sidecar and thumbnail if they exist
+            if (File.Exists(vm.Model.SidecarPath))
+            {
+                File.Delete(vm.Model.SidecarPath);
+            }
+            if (File.Exists(vm.Model.ThumbnailPath))
+            {
+                File.Delete(vm.Model.ThumbnailPath);
+            }
+            
+            // Remove from gallery
+            Gallery.Clips.Remove(vm);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Delete failed: {ex.Message}");
+        }
     }
 }

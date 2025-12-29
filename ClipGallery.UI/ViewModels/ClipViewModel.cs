@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ClipGallery.Core.Models;
-using ClipGallery.Core.Services; // Added
+using ClipGallery.Core.Services;
 using Avalonia.Media.Imaging;
 using System;
 using System.IO;
@@ -61,6 +61,23 @@ public partial class ClipViewModel : ObservableObject
             var t = TimeSpan.FromSeconds(Model.DurationSeconds);
             DurationDisplay = $"{(int)t.TotalMinutes}:{t.Seconds:D2}";
         }
+    }
+
+    /// <summary>
+    /// Notify that a property has changed. Used after modifying Model properties directly.
+    /// </summary>
+    public new void OnPropertyChanged(string? propertyName = null)
+    {
+        base.OnPropertyChanged(propertyName);
+    }
+
+    /// <summary>
+    /// Refresh file-related properties after rename/move
+    /// </summary>
+    public void RefreshFileProperties()
+    {
+        OnPropertyChanged(nameof(FileName));
+        OnPropertyChanged(nameof(GameName));
     }
 
     public async Task LoadThumbnailAsync()

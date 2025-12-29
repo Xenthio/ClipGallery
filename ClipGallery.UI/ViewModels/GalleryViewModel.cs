@@ -29,16 +29,21 @@ public partial class GalleryViewModel : ObservableObject
     public void LoadClips(IEnumerable<ClipViewModel> clips)
     {
         _allClips = clips.ToList();
+        RefreshGames();
+        RefreshTags();
+        ApplyFilter();
+    }
 
-        // Extract Games
+    public void RefreshGames()
+    {
         var games = _allClips.Select(c => c.GameName).Distinct().OrderBy(g => g);
         Games = new ObservableCollection<string>(games);
+    }
 
-        // Extract Tags
+    public void RefreshTags()
+    {
         var tags = _allClips.SelectMany(c => c.Model.Tags).Distinct().OrderBy(t => t);
         Tags = new ObservableCollection<string>(tags);
-
-        ApplyFilter();
     }
 
     public void FilterByGame(string? gameName)

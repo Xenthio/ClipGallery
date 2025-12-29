@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ClipGallery.UI.Views.RenameDialog"
+        Width="400" Height="150"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="BorderOnly"
+        Background="#1a1a1a"
+        Title="Rename Clip">
+        
+    <Border BorderBrush="#333" BorderThickness="1">
+        <Grid RowDefinitions="Auto, Auto, Auto" Margin="20">
+            <TextBlock Text="Enter new name:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+            
+            <TextBox Grid.Row="1" x:Name="NameInput" Watermark="File name..." Margin="0,0,0,15"/>
+            
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button Content="Cancel" Click="OnCancelClick" Background="#404040" Foreground="#AAA"/>
+                <Button Content="Rename" Click="OnRenameClick" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
