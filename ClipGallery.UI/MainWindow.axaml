@@ -109,7 +109,7 @@
             <Border Grid.Row="0" Padding="20" Background="#1a1a1a">
                 <Grid ColumnDefinitions="Auto, Auto, *, Auto">
                     <TextBlock Grid.Column="0" Text="All Clips" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Gallery.Clips.Count, StringFormat='({0} items)'}" 
+                    <TextBlock Grid.Column="1" Text="{Binding Gallery.TotalClipsCount, StringFormat='({0} items)'}" 
                                VerticalAlignment="Center" Foreground="#808080" Margin="10,0,0,0"/>
                     
                     <!-- Search Box -->
