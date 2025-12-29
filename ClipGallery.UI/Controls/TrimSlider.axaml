@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="80"
+             x:Class="ClipGallery.UI.Controls.TrimSlider">
+    
+    <Grid RowDefinitions="Auto, 40">
+        <!-- Timeline Track -->
+        <Canvas Grid.Row="0" Height="40" Background="#1a1a1a" 
+                ClipToBounds="True" x:Name="TimelineCanvas">
+            
+            <!-- Trimmed region highlight -->
+            <Border x:Name="TrimmedRegion"
+                    Background="#40007ACC"
+                    Height="40"
+                    BorderBrush="#007ACC"
+                    BorderThickness="0,2"/>
+            
+            <!-- Start Thumb -->
+            <Border x:Name="StartThumb"
+                    Width="16" Height="40"
+                    Background="#4CAF50"
+                    CornerRadius="4,0,0,4"
+                    Cursor="SizeWE"
+                    PointerPressed="StartThumb_PointerPressed">
+                <TextBlock Text="⎾" 
+                          FontSize="18" 
+                          Foreground="White" 
+                          HorizontalAlignment="Center" 
+                          VerticalAlignment="Center"/>
+            </Border>
+            
+            <!-- End Thumb -->
+            <Border x:Name="EndThumb"
+                    Width="16" Height="40"
+                    Background="#FF9800"
+                    CornerRadius="0,4,4,0"
+                    Cursor="SizeWE"
+                    PointerPressed="EndThumb_PointerPressed">
+                <TextBlock Text="⏌" 
+                          FontSize="18" 
+                          Foreground="White" 
+                          HorizontalAlignment="Center" 
+                          VerticalAlignment="Center"/>
+            </Border>
+        </Canvas>
+        
+        <!-- Time labels -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Margin="0,5,0,0">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
+                <TextBlock Text="Start:" Foreground="#888" FontSize="11"/>
+                <TextBlock Text="{Binding #StartTime.Text}" 
+                          x:Name="StartTime"
+                          Foreground="#4CAF50" 
+                          FontFamily="Consolas" 
+                          FontSize="12" 
+                          FontWeight="Bold"/>
+            </StackPanel>
+            
+            <TextBlock Grid.Column="1" 
+                      Text="{Binding #DurationText.Text}"
+                      x:Name="DurationText"
+                      HorizontalAlignment="Center"
+                      Foreground="#AAA" 
+                      FontSize="11"/>
+            
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
+                <TextBlock Text="End:" Foreground="#888" FontSize="11"/>
+                <TextBlock Text="{Binding #EndTime.Text}"
+                          x:Name="EndTime"
+                          Foreground="#FF9800" 
+                          FontFamily="Consolas" 
+                          FontSize="12" 
+                          FontWeight="Bold"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

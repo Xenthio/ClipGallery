@@ -1,6 +1,7 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using ClipGallery.UI.ViewModels;
 
 namespace ClipGallery.UI.Views;
@@ -11,6 +12,20 @@ public partial class PlayerWindow : Window
     {
         InitializeComponent();
         KeyDown += OnKeyDown;
+        Loaded += PlayerWindow_Loaded;
+    }
+
+    private void PlayerWindow_Loaded(object? sender, RoutedEventArgs e)
+    {
+        // Wire up TrimSlider events
+        var trimSlider = this.FindControl<Controls.TrimSlider>("TrimSlider");
+        if (trimSlider != null && DataContext is PlayerViewModel vm)
+        {
+            trimSlider.StartValueChanging += (s, value) => vm.HandleTrimStartChanging(value);
+            trimSlider.EndValueChanging += (s, value) => vm.HandleTrimEndChanging(value);
+            trimSlider.StartValueChanged += (s, value) => vm.HandleTrimStartChanged(value);
+            trimSlider.EndValueChanged += (s, value) => vm.HandleTrimEndChanged(value);
+        }
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

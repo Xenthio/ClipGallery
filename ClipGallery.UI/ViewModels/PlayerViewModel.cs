@@ -31,6 +31,9 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private double _trimStart;
     [ObservableProperty] private double _trimEnd;
+    
+    // For frame preview during trim slider dragging
+    [ObservableProperty] private bool _isTrimming = false;
 
     // Export Presets
     public List<ExportPreset> ExportPresets { get; } = Enum.GetValues<ExportPreset>().ToList();
@@ -64,7 +67,9 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         // Initialize LibVLC with options to embed video in the window
         _libVlc = new LibVLC(
             "--no-video-title-show",
-            "--no-osd"
+            "--no-osd",
+            "--no-video-deco",        // Disable window decorations
+            "--no-embedded-video"     // Ensure video is not trying to embed in a separate window
         );
         _mediaPlayer = new MediaPlayer(_libVlc)
         {
@@ -202,6 +207,66 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         var newMs = currentMs + (long)(seconds * 1000);
         newMs = Math.Clamp(newMs, 0, _mediaPlayer.Length);
         _mediaPlayer.Time = newMs;
+    }
+
+    /// <summary>
+    /// Seek to absolute time in seconds
+    /// </summary>
+    public void SeekToTime(double seconds)
+    {
+        if (_mediaPlayer.Length <= 0) return;
+        
+        var ms = (long)(seconds * 1000);
+        ms = Math.Clamp(ms, 0, _mediaPlayer.Length);
+        _mediaPlayer.Time = ms;
+    }
+
+    /// <summary>
+    /// Called when trim start value is being changed (dragging)
+    /// </summary>
+    public void HandleTrimStartChanging(double value)
+    {
+        TrimStart = value;
+        IsTrimming = true;
+        SeekToTime(value);
+        // Pause during trimming for better frame preview
+        if (_mediaPlayer.IsPlaying)
+        {
+            _mediaPlayer.Pause();
+        }
+    }
+
+    /// <summary>
+    /// Called when trim end value is being changed (dragging)
+    /// </summary>
+    public void HandleTrimEndChanging(double value)
+    {
+        TrimEnd = value;
+        IsTrimming = true;
+        SeekToTime(value);
+        // Pause during trimming for better frame preview
+        if (_mediaPlayer.IsPlaying)
+        {
+            _mediaPlayer.Pause();
+        }
+    }
+
+    /// <summary>
+    /// Called when trim start value change is complete
+    /// </summary>
+    public void HandleTrimStartChanged(double value)
+    {
+        TrimStart = value;
+        IsTrimming = false;
+    }
+
+    /// <summary>
+    /// Called when trim end value change is complete
+    /// </summary>
+    public void HandleTrimEndChanged(double value)
+    {
+        TrimEnd = value;
+        IsTrimming = false;
     }
 
     // Fix UpdateDuration logic (TimeChanged)
