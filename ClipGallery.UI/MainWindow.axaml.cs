@@ -33,12 +33,11 @@ public partial class MainWindow : Window
             var currentScroll = scrollViewer.Offset.Y;
             
             // Load more when within threshold of the bottom
-            if (scrollableHeight > 0 && currentScroll >= scrollableHeight - ScrollThresholdPixels)
+            if (scrollableHeight > 0 &&
+                currentScroll >= scrollableHeight - ScrollThresholdPixels &&
+                mainVm.Gallery.HasMoreClips)
             {
-                if (mainVm.Gallery.HasMoreClips)
-                {
-                    mainVm.Gallery.LoadMoreCommand.Execute(null);
-                }
+                mainVm.Gallery.LoadMoreCommand.Execute(null);
             }
         }
     }

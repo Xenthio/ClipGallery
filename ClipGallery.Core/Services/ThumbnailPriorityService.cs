@@ -119,9 +119,26 @@ public class ThumbnailPriorityService : IThumbnailPriorityService
 
     public void Stop()
     {
+        if (!_isRunning) return;
         _isRunning = false;
-        _cts.Cancel();
-        _cts.Dispose();
+        
+        try
+        {
+            _cts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Already disposed
+        }
+        
+        try
+        {
+            _cts.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Already disposed
+        }
     }
 
     private async Task ProcessQueueAsync()

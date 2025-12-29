@@ -142,7 +142,7 @@ public partial class GalleryViewModel : ObservableObject
         
         // Reset pagination and load first page
         _currentDisplayCount = 0;
-        HasMoreClips = _filteredClips.Count > 0; // Set to true initially so first load works
+        HasMoreClips = _filteredClips.Count > PageSize; // True only if there will be more after the first page
         DisplayedClips = new ObservableCollection<ClipViewModel>();
         LoadMoreClips();
     }

@@ -318,6 +318,11 @@ public partial class MainViewModel : ObservableObject
                     var dir = Path.GetDirectoryName(vm.Model.FilePath);
                     var newPath = Path.Combine(dir!, result);
                     
+                    if (File.Exists(newPath))
+                    {
+                        throw new IOException($"Cannot rename clip: destination file already exists at '{newPath}'.");
+                    }
+                    
                     // Rename the file
                     File.Move(vm.Model.FilePath, newPath);
                     
@@ -365,6 +370,7 @@ public partial class MainViewModel : ObservableObject
         if (int.TryParse(ratingStr, out var rating))
         {
             ContextClip.Rating = rating;
+            await _scannerService.SaveClipAsync(ContextClip.Model);
         }
     }
 
@@ -384,7 +390,6 @@ public partial class MainViewModel : ObservableObject
                 try
                 {
                     // Find the library path that contains this clip
-                    var currentDir = Path.GetDirectoryName(vm.Model.FilePath)!;
                     var libraryPath = _settingsService.Settings.LibraryPaths
                         .FirstOrDefault(p => vm.Model.FilePath.StartsWith(p, StringComparison.OrdinalIgnoreCase));
                     
@@ -394,11 +399,18 @@ public partial class MainViewModel : ObservableObject
                         Directory.CreateDirectory(newGameDir);
                         
                         var newPath = Path.Combine(newGameDir, vm.Model.FileName);
+                        
+                        if (File.Exists(newPath))
+                        {
+                            throw new IOException($"Cannot move clip: destination file already exists at '{newPath}'.");
+                        }
+                        
                         File.Move(vm.Model.FilePath, newPath);
                         
                         // Update model
                         vm.Model.FilePath = newPath;
                         vm.Model.GameName = result;
+                        vm.DisplayGameName = GetDisplayGameName(result);
                         vm.RefreshFileProperties();
                         
                         // Refresh games list

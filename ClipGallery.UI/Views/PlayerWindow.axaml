@@ -119,7 +119,7 @@
         <!-- Keyboard shortcuts hint -->
         <Border Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" 
                 Background="#80000000" CornerRadius="4" Padding="10,5" Margin="10">
-            <TextBlock Text="Space: Play/Pause  |  ←/→: Seek  |  Esc: Close" 
+            <TextBlock Text="Space: Play/Pause  |  ←/→: Seek  |  ↑/↓: Volume  |  Esc: Close" 
                        FontSize="11" Foreground="#888"/>
         </Border>
     </Grid>
