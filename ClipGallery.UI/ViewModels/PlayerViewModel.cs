@@ -381,10 +381,15 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         // Dispose VLC resources last
         _mediaPlayer.Dispose();
         _libVlc.Dispose();
-        if (_initializationTask.IsCompleted)
+        try
         {
-            _initializationTask.Dispose();
+            _initializationTask.Wait();
         }
+        catch
+        {
+            // Swallow to ensure disposal continues
+        }
+        _initializationTask.Dispose();
         _playbackStartSemaphore.Dispose();
     }
 }
