@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using ClipGallery.Core.Models;
 using System;
 using System.Collections.ObjectModel;
@@ -9,11 +10,25 @@ namespace ClipGallery.UI.ViewModels;
 
 public partial class GalleryViewModel : ObservableObject
 {
+    private const int PageSize = 100; // Number of clips to load at a time
+    
     [ObservableProperty]
     private ObservableCollection<ClipViewModel> _clips = new();
+    
+    /// <summary>
+    /// The clips currently displayed (paginated subset of Clips)
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<ClipViewModel> _displayedClips = new();
 
     // Cache of all clips for filtering
     private List<ClipViewModel> _allClips = new();
+    
+    // Currently filtered clips (before pagination)
+    private List<ClipViewModel> _filteredClips = new();
+    
+    // Current page
+    private int _currentDisplayCount = 0;
 
     [ObservableProperty]
     private ObservableCollection<string> _games = new();
@@ -27,6 +42,12 @@ public partial class GalleryViewModel : ObservableObject
 
     [ObservableProperty]
     private ClipViewModel? _selectedClip;
+    
+    [ObservableProperty]
+    private bool _hasMoreClips;
+    
+    [ObservableProperty]
+    private string _loadMoreText = "Load More";
 
     public void LoadClips(IEnumerable<ClipViewModel> clips)
     {
@@ -94,6 +115,34 @@ public partial class GalleryViewModel : ObservableObject
             );
         }
 
-        Clips = new ObservableCollection<ClipViewModel>(filtered);
+        _filteredClips = filtered.ToList();
+        Clips = new ObservableCollection<ClipViewModel>(_filteredClips);
+        
+        // Reset pagination and load first page
+        _currentDisplayCount = 0;
+        DisplayedClips.Clear();
+        LoadMoreClips();
+    }
+    
+    [RelayCommand]
+    public void LoadMore()
+    {
+        LoadMoreClips();
+    }
+    
+    private void LoadMoreClips()
+    {
+        var nextBatch = _filteredClips.Skip(_currentDisplayCount).Take(PageSize).ToList();
+        foreach (var clip in nextBatch)
+        {
+            DisplayedClips.Add(clip);
+        }
+        _currentDisplayCount += nextBatch.Count;
+        
+        HasMoreClips = _currentDisplayCount < _filteredClips.Count;
+        var remaining = _filteredClips.Count - _currentDisplayCount;
+        LoadMoreText = remaining > PageSize 
+            ? $"Load More ({remaining} remaining)" 
+            : $"Load All ({remaining} remaining)";
     }
 }
