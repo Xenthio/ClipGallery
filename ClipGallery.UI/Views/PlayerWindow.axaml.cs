@@ -11,6 +11,13 @@ public partial class PlayerWindow : Window
     {
         InitializeComponent();
         KeyDown += OnKeyDown;
+
+        var trimSlider = this.FindControl<ClipGallery.UI.Controls.TrimRangeSlider>("TrimSlider");
+        if (trimSlider != null)
+        {
+            trimSlider.StartValueDragging += (s, val) => (DataContext as PlayerViewModel)?.OnTrimDragging(val);
+            trimSlider.EndValueDragging += (s, val) => (DataContext as PlayerViewModel)?.OnTrimDragging(val);
+        }
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -49,7 +56,7 @@ public partial class PlayerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
-        
+
         // Dispose the player when window closes
         if (DataContext is PlayerViewModel vm)
         {

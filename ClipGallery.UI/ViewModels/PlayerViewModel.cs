@@ -4,6 +4,7 @@ using ClipGallery.Core.Models;
 using ClipGallery.Core.Services;
 using LibVLCSharp.Shared;
 using NAudio.Wave;
+using Avalonia.Controls;
 using System;
 using System.Threading.Tasks; // Added
 using System.Linq; // Added
@@ -31,6 +32,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private double _trimStart;
     [ObservableProperty] private double _trimEnd;
+    [ObservableProperty] private double _videoDuration;
 
     // Export Presets
     public List<ExportPreset> ExportPresets { get; } = Enum.GetValues<ExportPreset>().ToList();
@@ -49,6 +51,50 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     [ObservableProperty] private int _mainVolume = 100;
     [ObservableProperty] private float _secondaryVolume = 1.0f; // 0.0 to 1.0
 
+    // Properties for timeline trim highlight
+    [ObservableProperty] private GridLength _trimStartGridLength = new(0, GridUnitType.Star);
+    [ObservableProperty] private GridLength _trimMiddleGridLength = new(1, GridUnitType.Star);
+    [ObservableProperty] private GridLength _trimEndGridLength = new(0, GridUnitType.Star);
+
+    partial void OnTrimStartChanged(double value) => UpdateTrimVisuals();
+    partial void OnTrimEndChanged(double value) => UpdateTrimVisuals();
+    partial void OnVideoDurationChanged(double value) => UpdateTrimVisuals();
+
+    private void UpdateTrimVisuals()
+    {
+        if (VideoDuration <= 0)
+        {
+            TrimStartGridLength = new GridLength(0, GridUnitType.Star);
+            TrimMiddleGridLength = new GridLength(1, GridUnitType.Star);
+            TrimEndGridLength = new GridLength(0, GridUnitType.Star);
+            return;
+        }
+
+        var start = Math.Clamp(TrimStart / VideoDuration, 0, 1);
+        var end = Math.Clamp(TrimEnd / VideoDuration, 0, 1);
+        var middle = Math.Max(0, end - start);
+        var endPad = Math.Max(0, 1 - end);
+
+        TrimStartGridLength = new GridLength(start, GridUnitType.Star);
+        TrimMiddleGridLength = new GridLength(middle, GridUnitType.Star);
+        TrimEndGridLength = new GridLength(endPad, GridUnitType.Star);
+    }
+
+    [RelayCommand]
+    public void SeekToTrimStart() => _mediaPlayer.Time = (long)(TrimStart * 1000);
+
+    [RelayCommand]
+    public void SeekToTrimEnd() => _mediaPlayer.Time = (long)(TrimEnd * 1000);
+
+    public void OnTrimDragging(double value)
+    {
+        // Seek to the position being dragged for frame preview
+        if (_mediaPlayer.IsSeekable)
+        {
+            _mediaPlayer.Time = (long)(value * 1000);
+        }
+    }
+
     public PlayerViewModel(ClipViewModel clipVM, IAudioExtractionService audioService, IClipScannerService scannerService, ITranscodeService transcodeService)
     {
         _currentClip = clipVM;
@@ -60,6 +106,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _ratingInput = _currentClip.Model.Rating ?? 0;
 
         _trimEnd = _currentClip.Model.DurationSeconds > 0 ? _currentClip.Model.DurationSeconds : 10;
+        UpdateTrimVisuals();
 
         // Initialize LibVLC with options to embed video in the window
         _libVlc = new LibVLC(
@@ -87,10 +134,14 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
         // Setup Sync (rough implementation)
         _mediaPlayer.TimeChanged += OnVlcTimeChanged;
-        _mediaPlayer.Paused += (s, e) => _secondaryPlayer?.Pause();
-        _mediaPlayer.Playing += (s, e) => _secondaryPlayer?.Play();
-        _mediaPlayer.Stopped += (s, e) => _secondaryPlayer?.Stop();
+        _mediaPlayer.Paused += OnMediaPlayerPaused;
+        _mediaPlayer.Playing += OnMediaPlayerPlaying;
+        _mediaPlayer.Stopped += OnMediaPlayerStopped;
     }
+
+    private void OnMediaPlayerPaused(object? sender, EventArgs e) => _secondaryPlayer?.Pause();
+    private void OnMediaPlayerPlaying(object? sender, EventArgs e) => _secondaryPlayer?.Play();
+    private void OnMediaPlayerStopped(object? sender, EventArgs e) => _secondaryPlayer?.Stop();
 
     private void SetupSecondaryAudio(string path)
     {
@@ -128,6 +179,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         {
             var d = TimeSpan.FromMilliseconds(_mediaPlayer.Length);
             TotalTimeDisplay = $"{(int)d.TotalMinutes}:{d.Seconds:D2}";
+            VideoDuration = _mediaPlayer.Length / 1000.0; // Set for TrimRangeSlider
         }
 
         // Simple Sync: Check if drift > 100ms
@@ -197,7 +249,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     public void SeekRelative(double seconds)
     {
         if (_mediaPlayer.Length <= 0) return;
-        
+
         var currentMs = _mediaPlayer.Time;
         var newMs = currentMs + (long)(seconds * 1000);
         newMs = Math.Clamp(newMs, 0, _mediaPlayer.Length);
@@ -254,9 +306,29 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        _mediaPlayer.Dispose();
-        _libVlc.Dispose();
+        // Unsubscribe all events first to avoid callbacks during disposal
+        _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+        _mediaPlayer.Paused -= OnMediaPlayerPaused;
+        _mediaPlayer.Playing -= OnMediaPlayerPlaying;
+        _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+
+        // Stop playback before disposing to prevent ExecutionEngineException
+        try
+        {
+            if (_mediaPlayer.IsPlaying)
+            {
+                _mediaPlayer.Stop();
+            }
+        }
+        catch { /* Ignore errors during shutdown */ }
+
+        // Dispose secondary audio first
+        _secondaryPlayer?.Stop();
         _secondaryPlayer?.Dispose();
         _secondaryAudioFileReader?.Dispose();
+
+        // Dispose VLC resources last
+        _mediaPlayer.Dispose();
+        _libVlc.Dispose();
     }
 }

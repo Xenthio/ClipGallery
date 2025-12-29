@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="50"
+             x:Class="ClipGallery.UI.Controls.TrimRangeSlider">
+    
+    <Grid RowDefinitions="Auto, Auto">
+        <!-- Track and Handles -->
+        <Grid x:Name="TrackArea" Height="40" Margin="12,0">
+            <!-- Background Track -->
+            <Border Background="#333" Height="6" VerticalAlignment="Center" CornerRadius="3"/>
+            
+            <!-- Selected Range Highlight -->
+            <Border x:Name="RangeHighlight" Background="#4CAF50" Height="6" 
+                    VerticalAlignment="Center" CornerRadius="3" Opacity="0.8"
+                    HorizontalAlignment="Left"/>
+            
+            <!-- Start Handle -->
+            <Canvas>
+                <Grid x:Name="StartHandle" Canvas.Left="0" Width="24" Height="40" 
+                      Cursor="SizeWestEast" Background="Transparent">
+                    <Border Background="#4CAF50" Width="4" Height="24" CornerRadius="2" 
+                            VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Border Background="#4CAF50" Width="10" Height="4" CornerRadius="2"
+                            VerticalAlignment="Center" HorizontalAlignment="Left" Margin="-3,0,0,0"/>
+                    <!-- Time tooltip -->
+                    <Border x:Name="StartTooltip" Background="#222222" CornerRadius="3" 
+                            Padding="6,2" VerticalAlignment="Top" Margin="0,-24,0,0"
+                            HorizontalAlignment="Center" IsVisible="False">
+                        <TextBlock x:Name="StartTimeText" Text="0:00" Foreground="White" 
+                                   FontSize="11" FontFamily="Consolas"/>
+                    </Border>
+                </Grid>
+            </Canvas>
+            
+            <!-- End Handle -->
+            <Canvas>
+                <Grid x:Name="EndHandle" Canvas.Left="100" Width="24" Height="40" 
+                      Cursor="SizeWestEast" Background="Transparent">
+                    <Border Background="#FF9800" Width="4" Height="24" CornerRadius="2" 
+                            VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Border Background="#FF9800" Width="10" Height="4" CornerRadius="2"
+                            VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,-3,0"/>
+                    <!-- Time tooltip -->
+                    <Border x:Name="EndTooltip" Background="#222222" CornerRadius="3" 
+                            Padding="6,2" VerticalAlignment="Top" Margin="0,-24,0,0"
+                            HorizontalAlignment="Center" IsVisible="False">
+                        <TextBlock x:Name="EndTimeText" Text="0:00" Foreground="White" 
+                                   FontSize="11" FontFamily="Consolas"/>
+                    </Border>
+                </Grid>
+            </Canvas>
+        </Grid>
+        
+        <!-- Time Labels -->
+        <Grid Grid.Row="1" Margin="12,4,12,0">
+            <TextBlock x:Name="MinLabel" Text="0:00" FontSize="10" Foreground="#888" 
+                       HorizontalAlignment="Left" FontFamily="Consolas"/>
+            <TextBlock x:Name="MaxLabel" Text="0:00" FontSize="10" Foreground="#888" 
+                       HorizontalAlignment="Right" FontFamily="Consolas"/>
+        </Grid>
+    </Grid>
+</UserControl>
