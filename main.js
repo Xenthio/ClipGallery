@@ -239,11 +239,26 @@ function getVideoMetadata(filePath) {
       const videoStream = metadata.streams.find(s => s.codec_type === 'video');
       const audioStreams = metadata.streams.filter(s => s.codec_type === 'audio');
 
+      // Parse frame rate safely without eval
+      let fps = 0;
+      if (videoStream && videoStream.r_frame_rate) {
+        const parts = videoStream.r_frame_rate.split('/');
+        if (parts.length === 2) {
+          const numerator = parseFloat(parts[0]);
+          const denominator = parseFloat(parts[1]);
+          if (denominator !== 0 && !isNaN(numerator) && !isNaN(denominator)) {
+            fps = numerator / denominator;
+          }
+        } else if (parts.length === 1) {
+          fps = parseFloat(parts[0]) || 0;
+        }
+      }
+
       resolve({
         duration: metadata.format.duration || 0,
         codec: videoStream ? videoStream.codec_name : 'unknown',
         resolution: videoStream ? `${videoStream.width}x${videoStream.height}` : 'unknown',
-        fps: videoStream && videoStream.r_frame_rate ? eval(videoStream.r_frame_rate) : 0,
+        fps: fps,
         audioTracks: audioStreams.length
       });
     });
@@ -252,31 +267,50 @@ function getVideoMetadata(filePath) {
 
 // Clip queries
 ipcMain.handle('get-clips', (event, filters = {}) => {
-  let query = 'SELECT * FROM clips WHERE 1=1';
+  let query;
   const params = [];
 
-  if (filters.game) {
-    query += ' AND game = ?';
-    params.push(filters.game);
-  }
-
-  if (filters.rating) {
-    query += ' AND rating >= ?';
-    params.push(filters.rating);
-  }
-
-  if (filters.search) {
-    query += ' AND (filename LIKE ? OR game LIKE ?)';
-    params.push(`%${filters.search}%`, `%${filters.search}%`);
-  }
-
+  // If filtering by tag, use a different base query
   if (filters.tag) {
     query = `SELECT DISTINCT c.* FROM clips c
              INNER JOIN clip_tags ct ON c.id = ct.clip_id
              INNER JOIN tags t ON ct.tag_id = t.id
              WHERE t.name = ?`;
-    params.length = 0;
     params.push(filters.tag);
+
+    // Add additional filters to tag query
+    if (filters.game) {
+      query += ' AND c.game = ?';
+      params.push(filters.game);
+    }
+
+    if (filters.rating) {
+      query += ' AND c.rating >= ?';
+      params.push(filters.rating);
+    }
+
+    if (filters.search) {
+      query += ' AND (c.filename LIKE ? OR c.game LIKE ?)';
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
+  } else {
+    // Standard query without tag filter
+    query = 'SELECT * FROM clips WHERE 1=1';
+
+    if (filters.game) {
+      query += ' AND game = ?';
+      params.push(filters.game);
+    }
+
+    if (filters.rating) {
+      query += ' AND rating >= ?';
+      params.push(filters.rating);
+    }
+
+    if (filters.search) {
+      query += ' AND (filename LIKE ? OR game LIKE ?)';
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
   }
 
   query += ' ORDER BY added_at DESC';

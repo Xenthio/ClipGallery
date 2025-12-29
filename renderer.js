@@ -118,8 +118,11 @@ function setupEventListeners() {
   document.getElementById('export-btn').addEventListener('click', async () => {
     if (!currentClipId) return;
     
+    const player = document.getElementById('video-player');
+    const clipDuration = player.duration || Number.MAX_SAFE_INTEGER;
+    
     try {
-      const outputPath = await ipcRenderer.invoke('trim-clip', currentClipId, 0, 999999, 'h264');
+      const outputPath = await ipcRenderer.invoke('trim-clip', currentClipId, 0, clipDuration, 'h264');
       alert(`Clip exported as H.264!\nSaved to: ${outputPath}`);
     } catch (error) {
       alert('Error exporting clip: ' + error.message);
