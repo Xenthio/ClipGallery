@@ -20,8 +20,14 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private readonly IClipScannerService _scannerService; // Injected
     private readonly ITranscodeService _transcodeService; // Injected
 
+    private Media? _media; // Keep reference to media to prevent disposal
     private IWavePlayer? _secondaryPlayer;
     private AudioFileReader? _secondaryAudioFileReader;
+
+    // Event handlers stored for proper unsubscription
+    private EventHandler<EventArgs>? _pausedHandler;
+    private EventHandler<EventArgs>? _playingHandler;
+    private EventHandler<EventArgs>? _stoppedHandler;
 
     [ObservableProperty]
     private ClipViewModel _currentClip;
@@ -31,6 +37,9 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private double _trimStart;
     [ObservableProperty] private double _trimEnd;
+    
+    // For frame preview during trim slider dragging
+    [ObservableProperty] private bool _isTrimming = false;
 
     // Export Presets
     public List<ExportPreset> ExportPresets { get; } = Enum.GetValues<ExportPreset>().ToList();
@@ -77,19 +86,29 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     private async void InitializeAsync()
     {
-        using var media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
-        _mediaPlayer.Media = media;
+        _media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
+        _mediaPlayer.Media = _media;
 
         await LoadAudioTracks(); // Call the new method
 
-        _mediaPlayer.Play();
-        _secondaryPlayer?.Play();
-
-        // Setup Sync (rough implementation)
+        // Setup Sync (rough implementation) - store handlers for proper cleanup
         _mediaPlayer.TimeChanged += OnVlcTimeChanged;
-        _mediaPlayer.Paused += (s, e) => _secondaryPlayer?.Pause();
-        _mediaPlayer.Playing += (s, e) => _secondaryPlayer?.Play();
-        _mediaPlayer.Stopped += (s, e) => _secondaryPlayer?.Stop();
+        _pausedHandler = (s, e) => _secondaryPlayer?.Pause();
+        _playingHandler = (s, e) => _secondaryPlayer?.Play();
+        _stoppedHandler = (s, e) => _secondaryPlayer?.Stop();
+        
+        _mediaPlayer.Paused += _pausedHandler;
+        _mediaPlayer.Playing += _playingHandler;
+        _mediaPlayer.Stopped += _stoppedHandler;
+    }
+
+    /// <summary>
+    /// Start playback - should be called after VideoView is ready
+    /// </summary>
+    public void StartPlayback()
+    {
+        _mediaPlayer?.Play();
+        _secondaryPlayer?.Play();
     }
 
     private void SetupSecondaryAudio(string path)
@@ -204,6 +223,66 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _mediaPlayer.Time = newMs;
     }
 
+    /// <summary>
+    /// Seek to absolute time in seconds
+    /// </summary>
+    public void SeekToTime(double seconds)
+    {
+        if (_mediaPlayer.Length <= 0) return;
+        
+        var ms = (long)(seconds * 1000);
+        ms = Math.Clamp(ms, 0, _mediaPlayer.Length);
+        _mediaPlayer.Time = ms;
+    }
+
+    /// <summary>
+    /// Called when trim start value is being changed (dragging)
+    /// </summary>
+    public void HandleTrimStartChanging(double value)
+    {
+        TrimStart = value;
+        IsTrimming = true;
+        SeekToTime(value);
+        // Pause during trimming for better frame preview
+        if (_mediaPlayer?.IsPlaying == true)
+        {
+            _mediaPlayer.Pause();
+        }
+    }
+
+    /// <summary>
+    /// Called when trim end value is being changed (dragging)
+    /// </summary>
+    public void HandleTrimEndChanging(double value)
+    {
+        TrimEnd = value;
+        IsTrimming = true;
+        SeekToTime(value);
+        // Pause during trimming for better frame preview
+        if (_mediaPlayer?.IsPlaying == true)
+        {
+            _mediaPlayer.Pause();
+        }
+    }
+
+    /// <summary>
+    /// Called when trim start value change is complete
+    /// </summary>
+    public void HandleTrimStartChanged(double value)
+    {
+        TrimStart = value;
+        IsTrimming = false;
+    }
+
+    /// <summary>
+    /// Called when trim end value change is complete
+    /// </summary>
+    public void HandleTrimEndChanged(double value)
+    {
+        TrimEnd = value;
+        IsTrimming = false;
+    }
+
     // Fix UpdateDuration logic (TimeChanged)
     private void UpdateDurationDisplay()
     {
@@ -254,9 +333,32 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        _mediaPlayer.Dispose();
-        _libVlc.Dispose();
-        _secondaryPlayer?.Dispose();
-        _secondaryAudioFileReader?.Dispose();
+        try
+        {
+            // Stop playback first
+            _mediaPlayer?.Stop();
+            _secondaryPlayer?.Stop();
+            
+            // Unsubscribe from all events
+            if (_mediaPlayer != null)
+            {
+                _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+                if (_pausedHandler != null) _mediaPlayer.Paused -= _pausedHandler;
+                if (_playingHandler != null) _mediaPlayer.Playing -= _playingHandler;
+                if (_stoppedHandler != null) _mediaPlayer.Stopped -= _stoppedHandler;
+            }
+            
+            // Dispose in reverse order of creation
+            _secondaryAudioFileReader?.Dispose();
+            _secondaryPlayer?.Dispose();
+            _media?.Dispose();
+            _mediaPlayer?.Dispose();
+            _libVlc?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            // Log but suppress disposal exceptions to prevent app crash
+            System.Diagnostics.Debug.WriteLine($"Error during PlayerViewModel disposal: {ex}");
+        }
     }
 }

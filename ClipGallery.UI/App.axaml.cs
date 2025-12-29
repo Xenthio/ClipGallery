@@ -46,6 +46,8 @@ public partial class App : Application
             {
                 DataContext = Services.GetRequiredService<MainViewModel>()
             };
+            // Set shutdown mode to only shut down when main window closes
+            desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;
         }
 
         base.OnFrameworkInitializationCompleted();
