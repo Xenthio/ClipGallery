@@ -82,20 +82,26 @@ public partial class MainViewModel : ObservableObject
 
     private void OnDisplayedClipsChanged(object? sender, IReadOnlyList<ClipViewModel> displayedClips)
     {
-        // Load thumbnails for newly visible clips
+        // Load thumbnails for newly visible clips immediately
         foreach (var vm in displayedClips)
         {
-            if (vm.Thumbnail == null && !vm.IsThumbnailFailed)
+            if (vm.Thumbnail == null && !vm.IsThumbnailFailed && !vm.IsLoadingThumbnail)
             {
-                // If thumbnail file exists, load it immediately (high priority)
-                if (vm.HasThumbnailFile)
+                // Always try to load thumbnail - LoadThumbnailAsync checks if file exists
+                // and loads it immediately if so
+                _ = vm.LoadThumbnailAsync();
+                
+                // If thumbnail file doesn't exist, also request generation with high priority
+                if (!vm.HasThumbnailFile)
                 {
-                    _ = Dispatcher.UIThread.InvokeAsync(() => _ = vm.LoadThumbnailAsync());
-                }
-                else
-                {
-                    // Thumbnail needs to be generated - bump priority
-                    _thumbnailPriorityService.PrioritizeClip(vm.Model);
+                    _thumbnailPriorityService.RequestThumbnail(vm.Model, highPriority: true, onComplete: () =>
+                    {
+                        _ = Dispatcher.UIThread.InvokeAsync(() => 
+                        {
+                            vm.MarkThumbnailReady();
+                            _ = vm.LoadThumbnailAsync();
+                        });
+                    });
                 }
             }
         }
