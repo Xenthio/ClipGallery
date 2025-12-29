@@ -131,10 +131,15 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     }
 
     private bool _playbackStarted;
+    private readonly object _playbackLock = new();
 
     public async Task StartPlaybackAsync()
     {
-        if (_playbackStarted) return;
+        lock (_playbackLock)
+        {
+            if (_playbackStarted) return;
+            _playbackStarted = true;
+        }
 
         await _initializationTask;
 
@@ -146,8 +151,6 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
         _mediaPlayer.Play();
         _secondaryPlayer?.Play();
-
-        _playbackStarted = true;
     }
 
     private void OnMediaPlayerPaused(object? sender, EventArgs e) => _secondaryPlayer?.Pause();
@@ -318,10 +321,13 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         // Unsubscribe all events first to avoid callbacks during disposal
-        _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
-        _mediaPlayer.Paused -= OnMediaPlayerPaused;
-        _mediaPlayer.Playing -= OnMediaPlayerPlaying;
-        _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+        if (_playbackStarted)
+        {
+            _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+            _mediaPlayer.Paused -= OnMediaPlayerPaused;
+            _mediaPlayer.Playing -= OnMediaPlayerPlaying;
+            _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+        }
 
         // Stop playback before disposing to prevent ExecutionEngineException
         try
