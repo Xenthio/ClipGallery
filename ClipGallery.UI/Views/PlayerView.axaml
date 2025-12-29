@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:ClipGallery.UI.ViewModels"
+             xmlns:vlc="using:LibVLCSharp.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ClipGallery.UI.Views.PlayerView"
+             x:DataType="vm:PlayerViewModel">
+    
+    <Grid RowDefinitions="*, Auto" Background="Black">
+        <!-- VLC Video Player -->
+        <vlc:VideoView MediaPlayer="{Binding Player}" Grid.Row="0"/>
+        
+        <!-- Controls Overlay -->
+        <Border Grid.Row="1" Background="#CC000000" Padding="10">
+            <StackPanel Spacing="10">
+                <!-- Timeline -->
+                <Grid ColumnDefinitions="Auto, *, Auto" Margin="20,0">
+                    <TextBlock Text="{Binding CurrentTimeDisplay}" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Slider Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Position}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text="{Binding TotalTimeDisplay}" Foreground="#CCC" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </Grid>
+
+                <!-- Play/Pause & Volume -->
+                <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+                    <Button Command="{Binding TogglePlayPauseCommand}" Background="Transparent" Padding="10">
+                        <TextBlock Text="⏯" FontSize="24" Foreground="White"/>
+                    </Button>
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <TextBlock Text="🔊" Foreground="White" VerticalAlignment="Center" FontSize="16"/>
+                        <Slider Minimum="0" Maximum="100" Value="{Binding MainVolume}" Width="100"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <TextBlock Text="🎤" Foreground="White" VerticalAlignment="Center" FontSize="16"/>
+                        <Slider Minimum="0" Maximum="1" Value="{Binding SecondaryVolume}" Width="100"/>
+                    </StackPanel>
+                </StackPanel>
+                
+                <!-- Metadata Controls -->
+                <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <TextBlock Text="⭐" Foreground="White" VerticalAlignment="Center"/>
+                        <NumericUpDown Minimum="0" Maximum="5" Value="{Binding RatingInput}" Width="60"/>
+                    </StackPanel>
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <TextBlock Text="🏷️" Foreground="White" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding TagsInput}" Width="200" Watermark="Tags..."/>
+                    </StackPanel>
+                    
+                    <Button Content="💾" Command="{Binding SaveMetadataCommand}" ToolTip.Tip="Save Metadata"/>
+                </StackPanel>
+                
+                <!-- Trimming Controls -->
+                <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <Button Content="[ Start" Command="{Binding SetTrimStartCommand}"/>
+                        <TextBlock Text="{Binding TrimStart, StringFormat='{}{0:F2}s'}" VerticalAlignment="Center" Foreground="#AAA"/>
+                    </StackPanel>
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <Button Content="End ]" Command="{Binding SetTrimEndCommand}"/>
+                        <TextBlock Text="{Binding TrimEnd, StringFormat='{}{0:F2}s'}" VerticalAlignment="Center" Foreground="#AAA"/>
+                    </StackPanel>
+                    
+                    <ComboBox ItemsSource="{Binding ExportPresets}" SelectedItem="{Binding SelectedPreset}" Width="100" VerticalAlignment="Center"/>
+                    <Button Content="Export" Command="{Binding ExportClipCommand}" Background="#007ACC" Foreground="White" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        
+        <!-- Close Button (Top Right) -->
+        <Button Content="X" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="20"
+                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ClosePlayerCommand}"
+                Background="Red" Foreground="White"/>
+    </Grid>
+</UserControl>

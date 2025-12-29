@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ClipGallery.UI.ViewModels"
+        x:Class="ClipGallery.UI.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Width="500" Height="400"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="BorderOnly"
+        Background="#1a1a1a"
+        Title="Settings">
+        
+    <Border BorderBrush="#333" BorderThickness="1">
+        <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+            <TextBlock Text="Library Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+            
+            <StackPanel Grid.Row="1" Spacing="10">
+                <TextBlock Text="Watch Folders" FontWeight="SemiBold" Foreground="#AAA"/>
+                
+                <ItemsControl ItemsSource="{Binding LibraryPaths}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#2d2d2d" Padding="10" CornerRadius="4">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                    <Button Content="X" 
+                                            Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemovePathCommand}"
+                                            CommandParameter="{Binding}"
+                                            Background="Transparent" Foreground="#FF5555" Margin="10,0,0,0"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                
+                <Button Content="Add Folder..." 
+                        Command="{Binding AddPathCommand}" 
+                        CommandParameter="{Binding $parent[Window]}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+            </StackPanel>
+            
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+                <Button Content="Save &amp; Restart" 
+                        Command="{Binding SaveAndCloseCommand}" 
+                        CommandParameter="{Binding $parent[Window]}"
+                        Background="#007ACC" Foreground="White" FontWeight="Bold"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

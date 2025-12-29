@@ -1,0 +1,99 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using ClipGallery.Core.Models;
+using ClipGallery.Core.Services; // Added
+using Avalonia.Media.Imaging;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace ClipGallery.UI.ViewModels;
+
+public partial class ClipViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private Clip _model;
+
+    [ObservableProperty]
+    private Bitmap? _thumbnail;
+
+    [ObservableProperty]
+    private bool _isLoadingThumbnail = true;
+
+    [ObservableProperty]
+    private bool _isThumbnailFailed = false;
+
+    private readonly IClipScannerService? _scannerService;
+
+    [ObservableProperty]
+    private string _durationDisplay = "--:--";
+
+    public int Rating
+    {
+        get => Model.Rating ?? 0;
+        set
+        {
+            if (Model.Rating != value)
+            {
+                Model.Rating = value;
+                OnPropertyChanged();
+                if (_scannerService != null)
+                {
+                    _ = _scannerService.SaveClipAsync(Model);
+                }
+            }
+        }
+    }
+
+    public string FileName => Model.FileName;
+    public string GameName => Model.GameName;
+
+    public ClipViewModel(Clip clip, IClipScannerService? scannerService = null)
+    {
+        _model = clip;
+        _scannerService = scannerService;
+        UpdateDuration();
+    }
+
+    public void UpdateDuration()
+    {
+        if (Model.DurationSeconds > 0)
+        {
+            var t = TimeSpan.FromSeconds(Model.DurationSeconds);
+            DurationDisplay = $"{(int)t.TotalMinutes}:{t.Seconds:D2}";
+        }
+    }
+
+    public async Task LoadThumbnailAsync()
+    {
+        IsLoadingThumbnail = true;
+
+        if (File.Exists(Model.ThumbnailPath))
+        {
+            try
+            {
+                // Decode to 320px width to save MASSIVE amount of memory
+                // Full 4k images -> ~30MB raw. 320px -> ~100KB.
+                await Task.Run(() =>
+                {
+                    using var stream = File.OpenRead(Model.ThumbnailPath);
+                    var bitmap = Bitmap.DecodeToWidth(stream, 320);
+
+                    // Update on UI Thread? ObservableProperty usually handles this if called from mapped task context
+                    // But Bitmap creation might need UI thread or be immutable. 
+                    // Avalonia Bitmaps are generally thread-safe for creation but binding update checks.
+                    Thumbnail = bitmap;
+                });
+            }
+            catch
+            {
+                IsThumbnailFailed = true;
+            }
+        }
+        else
+        {
+            IsThumbnailFailed = true;
+        }
+
+        IsLoadingThumbnail = false;
+    }
+}
