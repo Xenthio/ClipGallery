@@ -69,7 +69,8 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _libVlc = new LibVLC(
             "--no-video-title-show",  // Don't show video title
             "--no-osd",                // Disable on-screen display
-            "--no-video-deco"          // Disable window decorations
+            "--no-video-deco",         // Disable window decorations
+            "--no-xlib"                // Prevent VLC from opening its own window (Linux)
         );
         _mediaPlayer = new MediaPlayer(_libVlc)
         {
