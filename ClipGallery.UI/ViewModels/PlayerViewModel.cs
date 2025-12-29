@@ -24,6 +24,11 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private IWavePlayer? _secondaryPlayer;
     private AudioFileReader? _secondaryAudioFileReader;
 
+    // Event handlers stored for proper unsubscription
+    private EventHandler<EventArgs>? _pausedHandler;
+    private EventHandler<EventArgs>? _playingHandler;
+    private EventHandler<EventArgs>? _stoppedHandler;
+
     [ObservableProperty]
     private ClipViewModel _currentClip;
 
@@ -66,20 +71,10 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _trimEnd = _currentClip.Model.DurationSeconds > 0 ? _currentClip.Model.DurationSeconds : 10;
 
         // Initialize LibVLC with options to embed video in the window
-        var options = new List<string>
-        {
-            "--no-video-title-show",  // Don't show video title
-            "--no-osd",                // Disable on-screen display
-            "--no-video-deco"          // Disable window decorations
-        };
-        
-        // Platform-specific options for embedding
-        if (OperatingSystem.IsLinux())
-        {
-            options.Add("--no-xlib"); // Prevent VLC from opening its own window (Linux)
-        }
-        
-        _libVlc = new LibVLC(options.ToArray());
+        _libVlc = new LibVLC(
+            "--no-video-title-show",
+            "--no-osd"
+        );
         _mediaPlayer = new MediaPlayer(_libVlc)
         {
             EnableHardwareDecoding = true
@@ -96,11 +91,15 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
         await LoadAudioTracks(); // Call the new method
 
-        // Setup Sync (rough implementation)
+        // Setup Sync (rough implementation) - store handlers for proper cleanup
         _mediaPlayer.TimeChanged += OnVlcTimeChanged;
-        _mediaPlayer.Paused += (s, e) => _secondaryPlayer?.Pause();
-        _mediaPlayer.Playing += (s, e) => _secondaryPlayer?.Play();
-        _mediaPlayer.Stopped += (s, e) => _secondaryPlayer?.Stop();
+        _pausedHandler = (s, e) => _secondaryPlayer?.Pause();
+        _playingHandler = (s, e) => _secondaryPlayer?.Play();
+        _stoppedHandler = (s, e) => _secondaryPlayer?.Stop();
+        
+        _mediaPlayer.Paused += _pausedHandler;
+        _mediaPlayer.Playing += _playingHandler;
+        _mediaPlayer.Stopped += _stoppedHandler;
     }
 
     /// <summary>
@@ -334,10 +333,32 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        _mediaPlayer.Dispose();
-        _media?.Dispose();
-        _libVlc.Dispose();
-        _secondaryPlayer?.Dispose();
-        _secondaryAudioFileReader?.Dispose();
+        try
+        {
+            // Stop playback first
+            _mediaPlayer?.Stop();
+            _secondaryPlayer?.Stop();
+            
+            // Unsubscribe from all events
+            if (_mediaPlayer != null)
+            {
+                _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+                if (_pausedHandler != null) _mediaPlayer.Paused -= _pausedHandler;
+                if (_playingHandler != null) _mediaPlayer.Playing -= _playingHandler;
+                if (_stoppedHandler != null) _mediaPlayer.Stopped -= _stoppedHandler;
+            }
+            
+            // Dispose in reverse order of creation
+            _secondaryAudioFileReader?.Dispose();
+            _secondaryPlayer?.Dispose();
+            _media?.Dispose();
+            _mediaPlayer?.Dispose();
+            _libVlc?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            // Log but suppress disposal exceptions to prevent app crash
+            System.Diagnostics.Debug.WriteLine($"Error during PlayerViewModel disposal: {ex}");
+        }
     }
 }
