@@ -2,6 +2,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using ClipGallery.UI.ViewModels;
+using LibVLCSharp.Avalonia;
 
 namespace ClipGallery.UI.Views;
 
@@ -10,7 +11,24 @@ public partial class PlayerWindow : Window
     public PlayerWindow()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
         KeyDown += OnKeyDown;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (this.FindControl<VideoView>("VideoSurface") is { } videoView)
+        {
+            if (DataContext is PlayerViewModel vm)
+            {
+                videoView.MediaPlayer = vm.Player;
+                _ = vm.StartPlaybackAsync();
+            }
+            else
+            {
+                videoView.MediaPlayer = null;
+            }
+        }
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

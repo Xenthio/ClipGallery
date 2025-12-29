@@ -13,7 +13,7 @@
     
     <Grid RowDefinitions="*, Auto">
         <!-- VLC Video Player -->
-        <vlc:VideoView MediaPlayer="{Binding Player}" Grid.Row="0"/>
+        <vlc:VideoView x:Name="VideoSurface" Grid.Row="0"/>
         
         <!-- Controls Panel -->
         <Border Grid.Row="1" Background="#E0181818" Padding="20,15">
@@ -54,27 +54,22 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- Center: Rating -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="15">
-                        <controls:RatingControl Value="{Binding RatingInput}" Height="24"/>
-                        <Button Content="Save" Command="{Binding SaveMetadataCommand}" 
-                                Background="#404040" Foreground="#CCC" Padding="15,6" CornerRadius="4"
-                                ToolTip.Tip="Save rating and tags"/>
-                    </StackPanel>
-
-                    <!-- Tags Section -->
-                    <Border Grid.Column="2" Background="#2a2a2a" CornerRadius="4" Padding="10,5">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="Tags:" Foreground="#888" VerticalAlignment="Center"/>
-                            <TextBox Text="{Binding TagsInput}" Width="180" Watermark="tag1, tag2..." 
-                                     Background="#222" BorderThickness="0" Padding="8,5"/>
+                    <!-- Metadata cluster -->
+                    <Border Grid.Column="1" Grid.ColumnSpan="2" Background="#2a2a2a" CornerRadius="6" Padding="12,8" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <controls:RatingControl Value="{Binding RatingInput}" Height="24"/>
+                            <TextBox Text="{Binding TagsInput}" Width="220" Watermark="Add tags (comma separated)" 
+                                     Background="#222" BorderThickness="0" Padding="8,6"/>
+                            <Button Content="Save" Command="{Binding SaveMetadataCommand}" 
+                                    Background="#404040" Foreground="#CCC" Padding="15,6" CornerRadius="4"
+                                    ToolTip.Tip="Save rating and tags"/>
                         </StackPanel>
                     </Border>
                 </Grid>
 
                 <!-- Trim and Export Section -->
                 <Border Grid.Row="2" Background="#252525" CornerRadius="6" Padding="15,12">
-                    <Grid ColumnDefinitions="Auto, *, Auto">
+                    <Grid ColumnDefinitions="Auto, *, Auto" RowDefinitions="Auto,Auto" RowSpacing="10">
                         <TextBlock Grid.Column="0" Text="TRIM &amp; EXPORT" FontWeight="Bold" Foreground="#666" 
                                    VerticalAlignment="Center" FontSize="11"/>
                         
@@ -111,6 +106,21 @@
                                     Background="#007ACC" Foreground="White" FontWeight="Bold" 
                                     Padding="15,8" CornerRadius="4"/>
                         </StackPanel>
+
+                        <!-- Trim slider row -->
+                        <Grid Grid.Row="1" Grid.ColumnSpan="3" RowDefinitions="Auto,Auto" RowSpacing="6">
+                            <Grid>
+                                <Slider Minimum="0" Maximum="{Binding DurationSeconds, FallbackValue=1}" Value="{Binding TrimStart}" 
+                                        Height="18"/>
+                                <Slider Minimum="0" Maximum="{Binding DurationSeconds, FallbackValue=1}" Value="{Binding TrimEnd}" 
+                                        Height="18"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2">
+                                <TextBlock Text="{Binding TrimStart, StringFormat='Start: {0:F2}s'}" Foreground="#77FFFFFF" FontSize="11"/>
+                                <TextBlock Grid.Column="2" Text="{Binding TrimEnd, StringFormat='End: {0:F2}s'}" 
+                                           Foreground="#77FFFFFF" FontSize="11" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>

@@ -19,6 +19,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private readonly IAudioExtractionService _audioService;
     private readonly IClipScannerService _scannerService; // Injected
     private readonly ITranscodeService _transcodeService; // Injected
+    private readonly Task _initTask;
 
     private IWavePlayer? _secondaryPlayer;
     private AudioFileReader? _secondaryAudioFileReader;
@@ -31,6 +32,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private double _trimStart;
     [ObservableProperty] private double _trimEnd;
+    [ObservableProperty] private double _durationSeconds;
 
     // Export Presets
     public List<ExportPreset> ExportPresets { get; } = Enum.GetValues<ExportPreset>().ToList();
@@ -59,7 +61,8 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _tagsInput = string.Join(", ", _currentClip.Model.Tags);
         _ratingInput = _currentClip.Model.Rating ?? 0;
 
-        _trimEnd = _currentClip.Model.DurationSeconds > 0 ? _currentClip.Model.DurationSeconds : 10;
+        _durationSeconds = _currentClip.Model.DurationSeconds > 0 ? _currentClip.Model.DurationSeconds : 10;
+        _trimEnd = _durationSeconds;
 
         // Initialize LibVLC with options to embed video in the window
         _libVlc = new LibVLC(
@@ -72,24 +75,23 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         };
         Player = _mediaPlayer; // Bindable property
 
-        InitializeAsync();
+        _initTask = InitializeAsync();
     }
 
-    private async void InitializeAsync()
+    private Task InitializeAsync()
     {
         using var media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
         _mediaPlayer.Media = media;
 
-        await LoadAudioTracks(); // Call the new method
-
-        _mediaPlayer.Play();
-        _secondaryPlayer?.Play();
+        _ = LoadAudioTracks(); // Call the new method
 
         // Setup Sync (rough implementation)
         _mediaPlayer.TimeChanged += OnVlcTimeChanged;
         _mediaPlayer.Paused += (s, e) => _secondaryPlayer?.Pause();
         _mediaPlayer.Playing += (s, e) => _secondaryPlayer?.Play();
         _mediaPlayer.Stopped += (s, e) => _secondaryPlayer?.Stop();
+
+        return Task.CompletedTask;
     }
 
     private void SetupSecondaryAudio(string path)
@@ -107,6 +109,8 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private string _totalTimeDisplay = "00:00";
 
     private bool _isUpdatingPosition;
+    private bool _isSyncingTrim;
+    private bool _hasAppliedDuration;
 
     private void OnVlcTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
     {
@@ -130,6 +134,24 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
             TotalTimeDisplay = $"{(int)d.TotalMinutes}:{d.Seconds:D2}";
         }
 
+        if (!_hasAppliedDuration && _mediaPlayer.Length > 0)
+        {
+            _hasAppliedDuration = true;
+            var duration = _mediaPlayer.Length / 1000.0;
+            DurationSeconds = duration;
+
+            _isSyncingTrim = true;
+            if (TrimEnd <= 0 || TrimEnd > duration)
+            {
+                TrimEnd = duration;
+            }
+            if (TrimStart > TrimEnd)
+            {
+                TrimStart = TrimEnd;
+            }
+            _isSyncingTrim = false;
+        }
+
         // Simple Sync: Check if drift > 100ms
         if (_secondaryAudioFileReader != null)
         {
@@ -141,6 +163,49 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
                 _secondaryAudioFileReader.CurrentTime = vlcTime;
             }
         }
+    }
+
+    partial void OnTrimStartChanged(double value)
+    {
+        if (_isSyncingTrim) return;
+
+        var clamped = Math.Max(0, value);
+        if (clamped > TrimEnd)
+        {
+            _isSyncingTrim = true;
+            TrimStart = TrimEnd;
+            _isSyncingTrim = false;
+            clamped = TrimStart;
+        }
+
+        PreviewFrameAt(clamped);
+    }
+
+    partial void OnTrimEndChanged(double value)
+    {
+        if (_isSyncingTrim) return;
+
+        var limit = DurationSeconds > 0 ? DurationSeconds : double.MaxValue;
+        var clamped = Math.Min(limit, value);
+
+        if (clamped < TrimStart)
+        {
+            _isSyncingTrim = true;
+            TrimEnd = TrimStart;
+            _isSyncingTrim = false;
+            clamped = TrimEnd;
+        }
+
+        PreviewFrameAt(clamped);
+    }
+
+    private void PreviewFrameAt(double seconds)
+    {
+        if (!_mediaPlayer.IsSeekable || _mediaPlayer.Length <= 0) return;
+
+        var targetMs = (long)(seconds * 1000);
+        targetMs = Math.Clamp(targetMs, 0, _mediaPlayer.Length);
+        _mediaPlayer.Time = targetMs;
     }
 
     // Triggered when UI Slider changes Position
@@ -187,7 +252,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         }
         else
         {
-            _mediaPlayer.Play();
+            _ = StartPlaybackAsync();
         }
     }
 
@@ -250,6 +315,15 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
             $"{Path.GetFileNameWithoutExtension(CurrentClip.FileName)}_trim_{SelectedPreset}_{DateTime.Now:HHmmss}{ext}");
 
         await _transcodeService.TrimClipAsync(CurrentClip.Model, TrimStart, TrimEnd, exportPath, SelectedPreset);
+    }
+
+    public async Task StartPlaybackAsync()
+    {
+        await _initTask;
+        if (_mediaPlayer.IsPlaying) return;
+
+        _mediaPlayer.Play();
+        _secondaryPlayer?.Play();
     }
 
     public void Dispose()
