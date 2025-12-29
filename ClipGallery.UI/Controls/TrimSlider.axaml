@@ -22,7 +22,7 @@
                     Width="16" Height="40"
                     Background="#4CAF50"
                     CornerRadius="4,0,0,4"
-                    Cursor="SizeWE"
+                    Cursor="SizeWestEast"
                     PointerPressed="StartThumb_PointerPressed">
                 <TextBlock Text="⎾" 
                           FontSize="18" 
@@ -36,7 +36,7 @@
                     Width="16" Height="40"
                     Background="#FF9800"
                     CornerRadius="0,4,4,0"
-                    Cursor="SizeWE"
+                    Cursor="SizeWestEast"
                     PointerPressed="EndThumb_PointerPressed">
                 <TextBlock Text="⏌" 
                           FontSize="18" 
