@@ -6,6 +6,7 @@ using LibVLCSharp.Shared;
 using NAudio.Wave;
 using Avalonia.Controls;
 using System;
+using System.Threading;
 using System.Threading.Tasks; // Added
 using System.Linq; // Added
 using System.Collections.Generic; // Added
@@ -140,26 +141,41 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     }
 
     private bool _playbackStarted;
-    private readonly object _playbackStartLock = new();
+    private readonly SemaphoreSlim _playbackStartSemaphore = new(1, 1);
 
     public async Task StartPlaybackAsync()
     {
-        lock (_playbackStartLock)
+        await _playbackStartSemaphore.WaitAsync();
+        try
         {
             if (_playbackStarted) return;
+
+            await _initializationTask;
+
+            // Setup Sync (rough implementation)
+            _mediaPlayer.TimeChanged += OnVlcTimeChanged;
+            _mediaPlayer.Paused += OnMediaPlayerPaused;
+            _mediaPlayer.Playing += OnMediaPlayerPlaying;
+            _mediaPlayer.Stopped += OnMediaPlayerStopped;
+
+            _mediaPlayer.Play();
+            _secondaryPlayer?.Play();
+
             _playbackStarted = true;
         }
-
-        await _initializationTask;
-
-        // Setup Sync (rough implementation)
-        _mediaPlayer.TimeChanged += OnVlcTimeChanged;
-        _mediaPlayer.Paused += OnMediaPlayerPaused;
-        _mediaPlayer.Playing += OnMediaPlayerPlaying;
-        _mediaPlayer.Stopped += OnMediaPlayerStopped;
-
-        _mediaPlayer.Play();
-        _secondaryPlayer?.Play();
+        catch
+        {
+            _mediaPlayer.TimeChanged -= OnVlcTimeChanged;
+            _mediaPlayer.Paused -= OnMediaPlayerPaused;
+            _mediaPlayer.Playing -= OnMediaPlayerPlaying;
+            _mediaPlayer.Stopped -= OnMediaPlayerStopped;
+            _mediaPlayer.Stop();
+            throw;
+        }
+        finally
+        {
+            _playbackStartSemaphore.Release();
+        }
     }
 
     private void OnMediaPlayerPaused(object? sender, EventArgs e) => _secondaryPlayer?.Pause();
@@ -360,5 +376,6 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         // Dispose VLC resources last
         _mediaPlayer.Dispose();
         _libVlc.Dispose();
+        _playbackStartSemaphore.Dispose();
     }
 }
