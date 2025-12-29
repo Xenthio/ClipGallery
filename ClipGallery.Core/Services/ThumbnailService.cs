@@ -23,6 +23,13 @@ public class ThumbnailService : IThumbnailService
 
         try
         {
+            // Ensure the .thumbnails folder exists
+            var thumbDir = Path.GetDirectoryName(clip.ThumbnailPath);
+            if (!string.IsNullOrEmpty(thumbDir) && !Directory.Exists(thumbDir))
+            {
+                Directory.CreateDirectory(thumbDir);
+            }
+            
             // Take screenshot at 10% or 5 seconds, whichever is smaller (but at least 1s)
             var time = Math.Max(1, Math.Min(5, clip.DurationSeconds * 0.1));
 
