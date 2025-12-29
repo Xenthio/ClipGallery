@@ -61,8 +61,15 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
         _trimEnd = _currentClip.Model.DurationSeconds > 0 ? _currentClip.Model.DurationSeconds : 10;
 
-        _libVlc = new LibVLC();
-        _mediaPlayer = new MediaPlayer(_libVlc);
+        // Initialize LibVLC with options to embed video in the window
+        _libVlc = new LibVLC(
+            "--no-video-title-show",
+            "--no-osd"
+        );
+        _mediaPlayer = new MediaPlayer(_libVlc)
+        {
+            EnableHardwareDecoding = true
+        };
         Player = _mediaPlayer; // Bindable property
 
         InitializeAsync();
@@ -182,6 +189,19 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         {
             _mediaPlayer.Play();
         }
+    }
+
+    /// <summary>
+    /// Seek relative to current position by the specified seconds (can be negative)
+    /// </summary>
+    public void SeekRelative(double seconds)
+    {
+        if (_mediaPlayer.Length <= 0) return;
+        
+        var currentMs = _mediaPlayer.Time;
+        var newMs = currentMs + (long)(seconds * 1000);
+        newMs = Math.Clamp(newMs, 0, _mediaPlayer.Length);
+        _mediaPlayer.Time = newMs;
     }
 
     // Fix UpdateDuration logic (TimeChanged)

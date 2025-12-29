@@ -15,8 +15,21 @@ public class Clip
     // Metadata (loaded from sidecar)
     public int? Rating { get; set; } // 1-5
     public List<string> Tags { get; set; } = new();
+    public string Description { get; set; } = "";
     
-    public string ThumbnailPath => Path.ChangeExtension(FilePath, ".jpg");
+    /// <summary>
+    /// Gets the thumbnail path in a .thumbnails folder next to the video files.
+    /// </summary>
+    public string ThumbnailPath
+    {
+        get
+        {
+            var directory = Path.GetDirectoryName(FilePath) ?? "";
+            var thumbFolder = Path.Combine(directory, ".thumbnails");
+            return Path.Combine(thumbFolder, FileName + ".thumb.jpg");
+        }
+    }
+    
     public string SidecarPath => FilePath + ".json";
 }
 
@@ -24,4 +37,5 @@ public class ClipSidecarData
 {
     public int? Rating { get; set; }
     public List<string> Tags { get; set; } = new();
+    public string Description { get; set; } = "";
 }

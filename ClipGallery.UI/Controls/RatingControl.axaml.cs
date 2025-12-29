@@ -63,8 +63,8 @@ public partial class RatingControl : UserControl
     {
         if (IsReadOnly) return;
         var pos = e.GetPosition(StarsList);
-        var width = StarsList.Bounds.Width;
-        var starWidth = width / 5;
+        // Use fixed star width: 16px icon + 2px spacing = 18px per star
+        const double starWidth = 18;
 
         _hoverValue = (int)(pos.X / starWidth) + 1;
         _hoverValue = Math.Clamp(_hoverValue, 0, 5);
