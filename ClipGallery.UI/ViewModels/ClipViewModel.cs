@@ -45,12 +45,23 @@ public partial class ClipViewModel : ObservableObject
     }
 
     public string FileName => Model.FileName;
+    
+    /// <summary>
+    /// The actual folder name (used for filtering/moving)
+    /// </summary>
     public string GameName => Model.GameName;
+    
+    /// <summary>
+    /// Display name - can be an alias if game merging is configured
+    /// </summary>
+    [ObservableProperty]
+    private string _displayGameName = "";
 
     public ClipViewModel(Clip clip, IClipScannerService? scannerService = null)
     {
         _model = clip;
         _scannerService = scannerService;
+        _displayGameName = clip.GameName; // Default to actual name
         UpdateDuration();
     }
 

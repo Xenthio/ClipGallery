@@ -36,7 +36,8 @@ public partial class GalleryViewModel : ObservableObject
 
     public void RefreshGames()
     {
-        var games = _allClips.Select(c => c.GameName).Distinct().OrderBy(g => g);
+        // Use DisplayGameName for sidebar to support merged games
+        var games = _allClips.Select(c => c.DisplayGameName).Distinct().OrderBy(g => g);
         Games = new ObservableCollection<string>(games);
     }
 
@@ -64,7 +65,8 @@ public partial class GalleryViewModel : ObservableObject
 
         if (!string.IsNullOrEmpty(_selectedGame))
         {
-            filtered = filtered.Where(c => c.GameName == _selectedGame);
+            // Filter by DisplayGameName to support merged games
+            filtered = filtered.Where(c => c.DisplayGameName == _selectedGame);
         }
 
         if (!string.IsNullOrEmpty(_selectedTag))

@@ -195,7 +195,7 @@
                                     <StackPanel Grid.Row="1" Margin="8">
                                         <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontWeight="Medium"/>
                                         <Grid ColumnDefinitions="*, Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding GameName}" FontSize="12" Foreground="#808080" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="0" Text="{Binding DisplayGameName}" FontSize="12" Foreground="#808080" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                             <controls:RatingControl Grid.Column="1" Value="{Binding Rating}" Height="12" VerticalAlignment="Center"/>
                                         </Grid>
                                     </StackPanel>

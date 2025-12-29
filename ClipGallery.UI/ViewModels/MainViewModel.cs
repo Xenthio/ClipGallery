@@ -84,8 +84,19 @@ public partial class MainViewModel : ObservableObject
             _scannerService.StartWatching(path);
         }
 
-        // 2. Wrap via ViewModels
-        var vms = clips.Select(c => new ClipViewModel(c, _scannerService)).ToList();
+        // 2. Wrap via ViewModels and apply aliases
+        var aliases = _settingsService.Settings.GameAliases;
+        var vms = clips.Select(c => 
+        {
+            var vm = new ClipViewModel(c, _scannerService);
+            // Apply game alias if configured
+            if (aliases.TryGetValue(c.GameName, out var displayName))
+            {
+                vm.DisplayGameName = displayName;
+            }
+            return vm;
+        }).ToList();
+        
         Gallery.LoadClips(vms);
         IsLoading = false;
 
@@ -106,6 +117,13 @@ public partial class MainViewModel : ObservableObject
         Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var vm = new ClipViewModel(clip, _scannerService);
+            
+            // Apply game alias if configured
+            if (_settingsService.Settings.GameAliases.TryGetValue(clip.GameName, out var displayName))
+            {
+                vm.DisplayGameName = displayName;
+            }
+            
             Gallery.Clips.Insert(0, vm); // Add to top
 
             // Enrich
