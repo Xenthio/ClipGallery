@@ -20,6 +20,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     private readonly IClipScannerService _scannerService; // Injected
     private readonly ITranscodeService _transcodeService; // Injected
 
+    private Media? _media; // Keep reference to media to prevent disposal
     private IWavePlayer? _secondaryPlayer;
     private AudioFileReader? _secondaryAudioFileReader;
 
@@ -81,8 +82,8 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
     private async void InitializeAsync()
     {
-        using var media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
-        _mediaPlayer.Media = media;
+        _media = new Media(_libVlc, new Uri(CurrentClip.Model.FilePath));
+        _mediaPlayer.Media = _media;
 
         await LoadAudioTracks(); // Call the new method
 
@@ -229,7 +230,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         IsTrimming = true;
         SeekToTime(value);
         // Pause during trimming for better frame preview
-        if (_mediaPlayer.IsPlaying)
+        if (_mediaPlayer?.IsPlaying == true)
         {
             _mediaPlayer.Pause();
         }
@@ -244,7 +245,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         IsTrimming = true;
         SeekToTime(value);
         // Pause during trimming for better frame preview
-        if (_mediaPlayer.IsPlaying)
+        if (_mediaPlayer?.IsPlaying == true)
         {
             _mediaPlayer.Pause();
         }
@@ -319,6 +320,7 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _mediaPlayer.Dispose();
+        _media?.Dispose();
         _libVlc.Dispose();
         _secondaryPlayer?.Dispose();
         _secondaryAudioFileReader?.Dispose();
