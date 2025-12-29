@@ -25,6 +25,9 @@ public partial class PlayerWindow : Window
             trimSlider.EndValueChanging += (s, value) => vm.HandleTrimEndChanging(value);
             trimSlider.StartValueChanged += (s, value) => vm.HandleTrimStartChanged(value);
             trimSlider.EndValueChanged += (s, value) => vm.HandleTrimEndChanged(value);
+            
+            // Start playback after window is loaded and VideoView is ready
+            vm.StartPlayback();
         }
     }
 

@@ -66,12 +66,20 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
         _trimEnd = _currentClip.Model.DurationSeconds > 0 ? _currentClip.Model.DurationSeconds : 10;
 
         // Initialize LibVLC with options to embed video in the window
-        _libVlc = new LibVLC(
+        var options = new List<string>
+        {
             "--no-video-title-show",  // Don't show video title
             "--no-osd",                // Disable on-screen display
-            "--no-video-deco",         // Disable window decorations
-            "--no-xlib"                // Prevent VLC from opening its own window (Linux)
-        );
+            "--no-video-deco"          // Disable window decorations
+        };
+        
+        // Platform-specific options for embedding
+        if (OperatingSystem.IsLinux())
+        {
+            options.Add("--no-xlib"); // Prevent VLC from opening its own window (Linux)
+        }
+        
+        _libVlc = new LibVLC(options.ToArray());
         _mediaPlayer = new MediaPlayer(_libVlc)
         {
             EnableHardwareDecoding = true
@@ -88,14 +96,20 @@ public partial class PlayerViewModel : ObservableObject, IDisposable
 
         await LoadAudioTracks(); // Call the new method
 
-        _mediaPlayer.Play();
-        _secondaryPlayer?.Play();
-
         // Setup Sync (rough implementation)
         _mediaPlayer.TimeChanged += OnVlcTimeChanged;
         _mediaPlayer.Paused += (s, e) => _secondaryPlayer?.Pause();
         _mediaPlayer.Playing += (s, e) => _secondaryPlayer?.Play();
         _mediaPlayer.Stopped += (s, e) => _secondaryPlayer?.Stop();
+    }
+
+    /// <summary>
+    /// Start playback - should be called after VideoView is ready
+    /// </summary>
+    public void StartPlayback()
+    {
+        _mediaPlayer?.Play();
+        _secondaryPlayer?.Play();
     }
 
     private void SetupSecondaryAudio(string path)
