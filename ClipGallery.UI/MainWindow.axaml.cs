@@ -6,6 +6,8 @@ namespace ClipGallery.UI;
 
 public partial class MainWindow : Window
 {
+    private const double ScrollThresholdPixels = 200;
+    
     public MainWindow()
     {
         InitializeComponent();
@@ -19,6 +21,25 @@ public partial class MainWindow : Window
             DataContext is MainViewModel mainVm)
         {
             mainVm.ContextClip = clipVm;
+        }
+    }
+    
+    private void OnGalleryScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        // Infinite scroll: load more clips when scrolled near bottom
+        if (sender is ScrollViewer scrollViewer && DataContext is MainViewModel mainVm)
+        {
+            var scrollableHeight = scrollViewer.Extent.Height - scrollViewer.Viewport.Height;
+            var currentScroll = scrollViewer.Offset.Y;
+            
+            // Load more when within threshold of the bottom
+            if (scrollableHeight > 0 && currentScroll >= scrollableHeight - ScrollThresholdPixels)
+            {
+                if (mainVm.Gallery.HasMoreClips)
+                {
+                    mainVm.Gallery.LoadMoreCommand.Execute(null);
+                }
+            }
         }
     }
 }

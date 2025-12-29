@@ -56,6 +56,9 @@ public partial class GalleryViewModel : ObservableObject
     
     [ObservableProperty]
     private string _loadMoreText = "Load More";
+    
+    [ObservableProperty]
+    private bool _isLoadingMore;
 
     public void LoadClips(IEnumerable<ClipViewModel> clips)
     {
@@ -128,6 +131,7 @@ public partial class GalleryViewModel : ObservableObject
         
         // Reset pagination and load first page
         _currentDisplayCount = 0;
+        HasMoreClips = _filteredClips.Count > 0; // Set to true initially so first load works
         DisplayedClips = new ObservableCollection<ClipViewModel>();
         LoadMoreClips();
     }
@@ -140,24 +144,36 @@ public partial class GalleryViewModel : ObservableObject
     
     private void LoadMoreClips()
     {
-        var nextBatch = _filteredClips.Skip(_currentDisplayCount).Take(PageSize).ToList();
-        
-        // Create new collection with all items for efficient update
-        var newCollection = new ObservableCollection<ClipViewModel>(DisplayedClips.Concat(nextBatch));
-        DisplayedClips = newCollection;
-        
-        _currentDisplayCount += nextBatch.Count;
-        
-        var remaining = _filteredClips.Count - _currentDisplayCount;
-        HasMoreClips = remaining > 0;
-        
-        if (remaining > PageSize)
+        // Prevent multiple simultaneous loads or loading when nothing left
+        if (IsLoadingMore) return;
+        if (_currentDisplayCount >= _filteredClips.Count) 
         {
-            LoadMoreText = $"Load More ({remaining} remaining)";
+            HasMoreClips = false;
+            return;
         }
-        else if (remaining > 0)
+        
+        IsLoadingMore = true;
+        try
         {
-            LoadMoreText = $"Load All ({remaining} remaining)";
+            var nextBatch = _filteredClips.Skip(_currentDisplayCount).Take(PageSize).ToList();
+            
+            // Create new collection with all items for efficient update
+            var newCollection = new ObservableCollection<ClipViewModel>(DisplayedClips.Concat(nextBatch));
+            DisplayedClips = newCollection;
+            
+            _currentDisplayCount += nextBatch.Count;
+            
+            var remaining = _filteredClips.Count - _currentDisplayCount;
+            HasMoreClips = remaining > 0;
+            
+            if (remaining > 0)
+            {
+                LoadMoreText = $"Scroll for more ({remaining} remaining)";
+            }
+        }
+        finally
+        {
+            IsLoadingMore = false;
         }
     }
 }
