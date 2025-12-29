@@ -136,7 +136,7 @@
                     <DataTemplate DataType="vm:ClipViewModel">
                         <Border Width="240" Height="180" Background="#2d2d2d" CornerRadius="8" ClipToBounds="True">
                             <Border.ContextMenu>
-                                <ContextMenu>
+                                <ContextMenu Opened="OnClipContextMenuOpened">
                                     <MenuItem Header="Play" 
                                               Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).OpenPlayerCommand}"
                                               CommandParameter="{Binding .}"/>
